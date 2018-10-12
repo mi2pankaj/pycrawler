@@ -4,7 +4,7 @@ Created on 12-Oct-2018
 @author: pankaj.katiyar
 '''
 
-from __samplemodule import AsyncSampleClass
+from __poc_module import AsyncSampleClass
 import asyncio
 
 if __name__ == '__main__':

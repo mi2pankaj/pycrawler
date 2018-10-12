@@ -8,7 +8,7 @@ in any class return variable with self and in other class, create the instance o
     saareMethodObject.getDriver("chrome")
     driver = saareMethodObject.driver
 '''
-from __samplemodule import SaareMethods
+from __crawler import SaareMethods
 from concurrent.futures.thread import ThreadPoolExecutor
 
 '''
