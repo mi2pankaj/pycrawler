@@ -7,16 +7,14 @@ Created on 23-Nov-2017
 import re
 import traceback
 import sys
-# import requests
+import requests
 import threading
-import http
-import urllib3
 import configparser
 
 class SaareMethods():
 
     'contains information about damn pages'
-    damnPagesMap = {}
+    globalDamnPagesMap = {}
     
     'this map will be used to keep all values'
     globalUrlMap = {}
@@ -24,7 +22,6 @@ class SaareMethods():
     'this will keep unique urls which are already traversed - to avoid repetition'
     globalTraversedSet = set()
         
-  
   
     def get_config_param(self, section, key):
         config = configparser.ConfigParser()
@@ -69,14 +66,12 @@ class SaareMethods():
         url = ''
         for k,v in self.globalUrlMap.items():
             if(v==False):
-                url = k
-                                
                 try:
                     lock = threading.RLock()
                     lock.acquire(blocking=True)
                      
-                    ' remove url from global map '
-#                     self.globalUrlMap.pop(k)
+                    ' update url to true so that its not picked up again '
+                    url = k
                     self.globalUrlMap.update({k:True})
  
                 finally:
@@ -85,9 +80,8 @@ class SaareMethods():
                 break
             
         if(url != ''):
-            
             print()
-            print("Task Executed {} by ", format(threading.current_thread()), 'global map now - ', len(self.globalUrlMap), ' and url is ==> '+url)
+            print("Task Being Executed {} by ", format(threading.current_thread()), 'global map now - ', len(self.globalUrlMap), ' and url is ==> '+url)
             self.performTaskWithoutBrowser(url)
         
         
@@ -98,13 +92,7 @@ class SaareMethods():
             url = str(url)
  
             'check only those urls which starts with http and not traversed earlier and having lenskart domain'
-            if(url in self.globalTraversedSet):
-                pass
-               
-            elif not (self.ifLenskartDomain(url)):
-                pass
-                  
-            elif not(url.startswith('http')):
+            if((url in self.globalTraversedSet) | (not (self.ifLenskartDomain(url)))  | (not(url.startswith('http')))):
                 pass
                     
             else:
@@ -117,17 +105,11 @@ class SaareMethods():
                     finally:
                         lock.release() 
                     
-                    'trying a different library'
-#                     response = requests.get(url)
-#                     pageSource = response.text
-#                     status_code = response.status_code
-                    
-                    urllib3.disable_warnings()
-                    http = urllib3.PoolManager()
+                    'sending request to received url'                    
                     try:
-                        response = http.request('GET', url)
-                        pageSource = str(response.data)
-                        status_code = response.status
+                        response = requests.get(url)
+                        pageSource = response.text
+                        status_code = response.status_code
                     except Exception:
                         pageSource = 'This page isn’t working'
                         status_code = int(200)
@@ -141,7 +123,7 @@ class SaareMethods():
                         lock = threading.RLock()
                         lock.acquire(blocking=True)
                         try:            
-                            self.damnPagesMap.update({url : status_code})
+                            self.globalDamnPagesMap.update({url : status_code})
                         finally:
                             lock.release()
                             
@@ -151,7 +133,7 @@ class SaareMethods():
                         lock = threading.RLock()
                         lock.acquire(blocking=True)
                         try:            
-                            self.damnPagesMap.update({url : 'DAMN'})
+                            self.globalDamnPagesMap.update({url : 'DAMN'})
                         finally:
                             lock.release()
                     
@@ -161,7 +143,7 @@ class SaareMethods():
                         lock = threading.RLock()
                         lock.acquire(blocking=True)
                         try:            
-                            self.damnPagesMap.update({url : 'Not_Working_Page'})
+                            self.globalDamnPagesMap.update({url : 'Not_Working_Page'})
                         finally:
                             lock.release()
                                                     
@@ -180,7 +162,7 @@ class SaareMethods():
                                 else:
                                     urlList.remove(x)
 
-                            print('After Updating traversed ==> ',len(self.globalTraversedSet), ' global map ==> ', len(self.globalUrlMap), ' global DAMN map ==> ' , len(self.damnPagesMap))
+                            print('After Updating traversed ==> ',len(self.globalTraversedSet), ' global map ==> ', len(self.globalUrlMap), ' global DAMN map ==> ' , len(self.globalDamnPagesMap))
                                                     
                         except Exception:
                             traceback.print_exc(file=sys.stdout)
@@ -192,7 +174,7 @@ class SaareMethods():
                     print('exception occurred with url ==> ' +url)
                     traceback.print_exc(file=sys.stdout)
                     
-#             print('final global traversed set ==> ',len(self.globalTraversedSet), ' global map ==> ', len(self.globalUrlMap), ' global DAMN map ==> ' , len(self.damnPagesMap))
+#             print('final global traversed set ==> ',len(self.globalTraversedSet), ' global map ==> ', len(self.globalUrlMap), ' global DAMN map ==> ' , len(self.globalDamnPagesMap))
             
         except Exception:
             traceback.print_exc(file=sys.stdout)

@@ -25,25 +25,20 @@ if __name__ == '__main__':
     
     try:
         st1 = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-        
-        #startURL = 'http://wepaste.com/'    
-        #startURL = 'http://www.tutorialspoint.com/python/python_multithreading.htm'
         startURL = 'https://lenskart.com?s=1111'
         
-        ''' create object of class '''
+        'create object of class'
         saareMethodObject = SaareMethods.SaareMethods()
         
-        'get max threads tp parse '
+        'get max threads to parse'
         maxThreads = int(saareMethodObject.get_config_param('crawler', 'max_threads'))
         
-        print('using max threads ==> ', maxThreads)
-
-        print('started crawling ---> ') 
+        print('started crawling with max threads ==> ', maxThreads)         
         saareMethodObject.performTaskWithoutBrowser(startURL)
         
-        ' ===> this condition need to be fixed -- to review'
+        ' ===> crawl until traversed urls and parsed urls map are not same -- to review ==> '
         with ThreadPoolExecutor(max_workers=maxThreads) as executor:
-            while len(saareMethodObject.globalUrlMap) > 0:
+            while (len(saareMethodObject.globalDamnPagesMap) < len(saareMethodObject.globalUrlMap)):
                 executor.submit(saareMethodObject.launchCrawlerUsingMap)                
         
         print()
@@ -53,7 +48,7 @@ if __name__ == '__main__':
         traceback.print_exc(file=sys.stdout)
     
     st2 = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-    print('end time ==> '+st2 + ' start time ==> '+st1 + ' ===> dammn map ===> ', )
+    print('end time ==> '+st2 + ' start time ==> '+st1 + ' ===> dammn map ===> ',saareMethodObject.globalDamnPagesMap)
     
     print(saareMethodObject.damnPagesMap)
     
