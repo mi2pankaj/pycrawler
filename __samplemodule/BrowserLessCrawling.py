@@ -8,7 +8,7 @@ in any class return variable with self and in other class, create the instance o
     saareMethodObject.getDriver("chrome")
     driver = saareMethodObject.driver
 '''
-from __samplemodule.BrowserCrawling import SaareMethods
+from __samplemodule import SaareMethods
 from concurrent.futures.thread import ThreadPoolExecutor
 
 '''
@@ -28,32 +28,26 @@ if __name__ == '__main__':
         
         #startURL = 'http://wepaste.com/'    
         #startURL = 'http://www.tutorialspoint.com/python/python_multithreading.htm'
-        startURL = 'https://lenskart.com'
+        startURL = 'https://lenskart.com?s=1111'
         
         ''' create object of class '''
-        saareMethodObject = SaareMethods.SaareMethods()            
-        saareMethodObject.globalUrlList.append(startURL)
+        saareMethodObject = SaareMethods.SaareMethods()
         
+        'get max threads tp parse '
+        maxThreads = int(saareMethodObject.get_config_param('crawler', 'max_threads'))
+        
+        print('using max threads ==> ', maxThreads)
+
         print('started crawling ---> ') 
         saareMethodObject.performTaskWithoutBrowser(startURL)
-         
-        with ThreadPoolExecutor(max_workers=150) as executor:
-         
-            while len(saareMethodObject.globalUrlList) > 0:
-                executor.submit(saareMethodObject.launchCrawler, )
         
-#         while len(saareMethodObject.globalUrlList) > 0:
-#             for url in saareMethodObject.globalUrlList:
-#                 
-#                 try:
-# #                     saareMethodObject.performTaskWithoutBrowser(url)
-#                     executor.submit(saareMethodObject.performTaskWithoutBrowser, (url,))
-#                     
-#                 except Exception:
-#                     print('error ---> ')
+        ' ===> this condition need to be fixed -- to review'
+        with ThreadPoolExecutor(max_workers=maxThreads) as executor:
+            while len(saareMethodObject.globalUrlMap) > 0:
+                executor.submit(saareMethodObject.launchCrawlerUsingMap)                
         
-        
-        print('Length of global list after crawling ==> ', len(saareMethodObject.globalUrlList) , ' Length of global DAMN map after crawling ' , len(saareMethodObject.damnPagesMap))
+        print()
+        print('Length of global list after crawling ==> ', len(saareMethodObject.globalTraversedSet) , ' Length of global DAMN map after crawling ' , len(saareMethodObject.damnPagesMap))
 
     except Exception as err:
         traceback.print_exc(file=sys.stdout)
