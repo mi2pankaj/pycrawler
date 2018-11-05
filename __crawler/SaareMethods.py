@@ -10,6 +10,7 @@ import sys
 import requests
 import threading
 import configparser
+from concurrent.futures.thread import ThreadPoolExecutor
 
 class SaareMethods():
 
@@ -22,14 +23,36 @@ class SaareMethods():
     'this will keep unique urls which are already traversed - to avoid repetition'
     globalTraversedSet = set()
         
-  
+    ''' this is the main entry method '''
+    def entryMethod(self, startURL):
+        
+        try:        
+            'get max threads to parse'
+            maxThreads = int(self.get_config_param('crawler', 'max_threads'))
+        
+            print('started crawling with max threads ==> ', maxThreads)         
+            self.performTaskWithoutBrowser(startURL)
+            
+            '===> crawl until traversed urls and parsed urls map are not same -- to review ==> '
+            with ThreadPoolExecutor(max_workers=maxThreads) as executor:
+                while (len(self.globalDamnPagesMap) < len(self.globalUrlMap)):
+                    executor.submit(self.crawlUsingMap())                
+            
+            print()
+            print('Length of global list after crawling ==> ', len(self.globalTraversedSet) , ' Length of global DAMN map after crawling ' , len(self.globalDamnPagesMap))
+    
+            print(self.globalDamnPagesMap)
+    
+        except Exception as err:
+            traceback.print_exc(file=sys.stdout)
+    
+    ''' get config value from configuration '''
     def get_config_param(self, section, key):
         config = configparser.ConfigParser()
         config.read("/Users/pankaj.katiyar/Desktop/Automation/PythonCrawler/config/config.ini")
         self.config = config
 
         return self.config.get(section, key)
-  
   
     ''' get domain from received url '''
     def ifLenskartDomain(self, url):
@@ -43,9 +66,8 @@ class SaareMethods():
         else:
             return False
         
-        
     ''' launch crawler through executor using list '''
-    def launchCrawlerUsingList(self):
+    async def crawlUsingList(self):
 #         while len(self.globalUrlList) > 0:   
         
         'global list will be updated dynamically by many threads '
@@ -59,9 +81,8 @@ class SaareMethods():
             except Exception:
                 print('error ---> ')
             
-    
     ''' launch crawler through executor using map '''
-    def launchCrawlerUsingMap(self):
+    def crawlUsingMap(self):
         
         url = ''
         for k,v in self.globalUrlMap.items():
@@ -73,17 +94,15 @@ class SaareMethods():
                     ' update url to true so that its not picked up again '
                     url = k
                     self.globalUrlMap.update({k:True})
+                    
+                    print()
+                    print("Task Being Executed {} by ", format(threading.current_thread()), 'global map now - ', len(self.globalUrlMap), ' and url is ==> '+url)
+                    self.performTaskWithoutBrowser(url)
  
                 finally:
                     lock.release()
                                 
                 break
-            
-        if(url != ''):
-            print()
-            print("Task Being Executed {} by ", format(threading.current_thread()), 'global map now - ', len(self.globalUrlMap), ' and url is ==> '+url)
-            self.performTaskWithoutBrowser(url)
-        
         
     ''' perform task ==> get url, browse it and check it if its a DAMN and then find the url list and return this '''
     def performTaskWithoutBrowser(self, url):
@@ -178,5 +197,4 @@ class SaareMethods():
             
         except Exception:
             traceback.print_exc(file=sys.stdout)
-
 

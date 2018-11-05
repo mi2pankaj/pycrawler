@@ -2,9 +2,9 @@
 from pip._vendor.html5lib._ihatexml import letter
 from builtins import str
 
-from __samplemodule import SaareMethods
-import urllib3
 
+import urllib3
+from __crawler import SaareMethods
 
 
 a = 1;
