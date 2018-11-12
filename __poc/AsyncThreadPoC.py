@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
     # Give it some async work - 2
     saareMethodObject = SaareMethods.SaareMethods()
-    future = asyncio.run_coroutine_threadsafe(saareMethodObject.entryMethod('www.lenskart.com'), new_loop)
+    future = asyncio.run_coroutine_threadsafe(saareMethodObject.entryMethod('http://www.lenskart.com'), new_loop)
     
     # Wait for the result
     print(future.result())
