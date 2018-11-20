@@ -11,6 +11,8 @@ import requests
 import threading
 import configparser
 from concurrent.futures.thread import ThreadPoolExecutor
+import asyncio
+from lib2to3.pgen2.token import ASYNC
 
 class SaareMethods():
 
@@ -23,6 +25,8 @@ class SaareMethods():
     'this will keep unique urls which are already traversed - to avoid repetition'
     globalTraversedSet = set()
         
+    globalTaskList =[]
+        
     ''' this is the main entry method '''
     def entryMethod(self, startURL):
         
@@ -34,17 +38,27 @@ class SaareMethods():
             self.performTaskWithoutBrowser(startURL)
             
             '===> crawl until traversed urls and parsed urls map are not same -- to review ==> '
-            with ThreadPoolExecutor(max_workers=maxThreads) as executor:
-                while (len(self.globalDamnPagesMap) < len(self.globalUrlMap)):
-                    executor.submit(self.crawlUsingMap())                
+#             with ThreadPoolExecutor(max_workers=maxThreads) as executor:
+#                 while (len(self.globalDamnPagesMap) < len(self.globalUrlMap)):     
+#                     executor.submit(self.crawlUsingMap())
+
+            while (len(self.globalDamnPagesMap) < len(self.globalUrlMap)):
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                localMap = self.globalUrlMap
+                print('===>   size of local map ==> ', len(localMap))
+                loop.run_until_complete(asyncio.gather(*[self.crawlUsingMap() for url in list(self.globalUrlMap)]))
+                loop.close()
             
             print()
             print('Length of global list after crawling ==> ', len(self.globalTraversedSet) , ' Length of global DAMN map after crawling ' , len(self.globalDamnPagesMap))
     
             print(self.globalDamnPagesMap)
     
-        except Exception as err:
+        except Exception:
             traceback.print_exc(file=sys.stdout)
+    
     
     ''' get config value from configuration '''
     def get_config_param(self, section, key):
@@ -81,8 +95,10 @@ class SaareMethods():
             except Exception:
                 print('error ---> ')
             
+            
     ''' launch crawler through executor using map '''
-    def crawlUsingMap(self):
+#     @asyncio.coroutine
+    async def crawlUsingMap(self):
         
         url = ''
         for k,v in self.globalUrlMap.items():
@@ -103,6 +119,7 @@ class SaareMethods():
                     lock.release()
                                 
                 break
+        
         
     ''' perform task ==> get url, browse it and check it if its a DAMN and then find the url list and return this '''
     def performTaskWithoutBrowser(self, url):
@@ -181,7 +198,7 @@ class SaareMethods():
                                 else:
                                     urlList.remove(x)
 
-                            print('After Updating traversed ==> ',len(self.globalTraversedSet), ' global map ==> ', len(self.globalUrlMap), ' global DAMN map ==> ' , len(self.globalDamnPagesMap))
+                            print('After Updating, traversed ==> ',len(self.globalTraversedSet), ' global map ==> ', len(self.globalUrlMap), ' global damn map ==> ' , len(self.globalDamnPagesMap))
                                                     
                         except Exception:
                             traceback.print_exc(file=sys.stdout)
