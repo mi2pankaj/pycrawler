@@ -27,9 +27,11 @@ if __name__ == '__main__':
     saareMethodObject.entryMethod(startURL)
     
     st2 = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-    print('end time ==> '+st2 + ' start time ==> '+st1 + ' ===> dammn map ===> ',saareMethodObject.globalDamnPagesMap)
-    
+    print('=========================================================================================================')
+    print(' start time ==> '+st1 + 'end time ==> '+st2)
+    print()
+    print(' ===> dammn map ===> ',saareMethodObject.globalDamnPagesMap)
+    print('=========================================================================================================')
     
     pass
-
 

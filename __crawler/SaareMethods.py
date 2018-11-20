@@ -10,7 +10,10 @@ import sys
 import requests
 import threading
 import configparser
-from concurrent.futures.thread import ThreadPoolExecutor
+import concurrent.futures
+import time
+from datetime import datetime
+
 import asyncio
 
 class SaareMethods():
@@ -41,10 +44,16 @@ class SaareMethods():
             asyncio.set_event_loop(loop)        
 
             '===> crawl until traversed urls and parsed urls map are not same -- to review ==> '
-#             while (len(self.globalTraversedSet) < len(self.globalUrlMap)):
-#                 self.async_start_crawling()
+            _executor = concurrent.futures.ThreadPoolExecutor(max_workers=maxThreads)
             
-            loop.run_until_complete(self.async_start_crawling_01)
+            'synchronous crawling with executor ==> to use this -- remove async and await from all the used methods '
+#             loop.run_until_complete(self.synchronous_crawling_using_executor(_executor))
+            
+            while (len(self.globalTraversedSet) < len(self.globalUrlMap)):
+#                 loop.run_in_executor(_executor, self.crawlUsingMap)
+                loop.run_in_executor(_executor,self.async_crawling)
+                
+            loop.run_until_complete(self.async_crawling)
             loop.close()
             
             print()
@@ -57,34 +66,33 @@ class SaareMethods():
     
 
     ''' async entry method for crawler '''    
-    def async_start_crawling_01(self):
-        
-        loop = asyncio.get_event_loop()
-        
-        ' using loop with thread pool executor '
-        while (len(self.globalTraversedSet) < len(self.globalUrlMap)):
-                with ThreadPoolExecutor(max_workers=10) as _executor:                    
-                    
-                    loop.run_in_executor(_executor, self.crawlUsingMap())
-
+    def synchronous_crawling_using_executor(self, _executor):
+        try:
+            loop = asyncio.get_event_loop()
+            
+            ' using loop with thread pool executor '
+            while (len(self.globalTraversedSet) <= len(self.globalUrlMap)):
+                loop.run_in_executor(_executor, self.crawlUsingMap)
+                
+        except Exception:            
+            traceback.print_exc(file=sys.stdout)
+            
 
     ''' async entry method for crawler '''    
-    def async_start_crawling(self):
+    def async_crawling(self):
         
         ''' create an event loop to iterate the global map - async way '''
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)        
-
-        localMap = self.globalUrlMap
-        print('===>  loop iteration started ==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==> ', len(localMap))
-        
+                
         'run a task -- this means execute crawlUsingMap while itearting the whole globalUrlMap '
+#         localMap = self.globalUrlMap
 #         loop.run_until_complete(asyncio.gather(*[self.crawlUsingMap() for url in list(localMap)]))
         
         'run a task -- means execute crawlUsingMap method - which browse only one url at a time, here iteration will be controlled by outer loop '
         loop.run_until_complete(asyncio.gather(*[self.crawlUsingMap()]))
+        
         loop.close()
-        print('===>  loop iteration ended ==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==> ')
     
     
     ''' get config value from configuration '''
@@ -127,26 +135,31 @@ class SaareMethods():
             
     ''' launch crawler through executor using map '''
     async def crawlUsingMap(self):
-        url = ''
-        for k,v in self.globalUrlMap.items():
-            if(v==False):
-                try:
-                    lock = threading.RLock()
-                    lock.acquire(blocking=True)
-                     
-                    ' update url to true so that its not picked up again '
-                    url = k
-                    self.globalUrlMap.update({k:True})
-                    
-                    print()
-                    print("Task Being Executed {} by ", format(threading.current_thread()), 'global map now - ', len(self.globalUrlMap), ' and url is ==> '+url)
-                    await self.performTaskWithoutBrowser(url)
- 
-                finally:
-                    lock.release()
-                                
-                break
         
+        try:
+            url = ''
+            for k,v in self.globalUrlMap.items():
+                if(v==False):
+                    try:
+                        lock = threading.RLock()
+                        lock.acquire(blocking=True)
+                         
+                        ' update url to true so that its not picked up again '
+                        url = k
+                        self.globalUrlMap.update({k:True})
+                        
+                        print()
+                        print("Time: "+datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +" Thread: ", format(threading.current_thread()), 'global map: ', len(self.globalUrlMap), ' url is ==> '+url)
+                        await self.performTaskWithoutBrowser(url)
+     
+                    finally:
+                        lock.release()
+                                    
+                    break
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
+            
+            
         
     '''' added a method which return http response - for async handling '''    
     async def get_http_response(self, url):
@@ -163,10 +176,19 @@ class SaareMethods():
         try:
             url = str(url)
  
-            'check only those urls which starts with http and not traversed earlier and having lenskart domain'
+            'check only those urls which starts with http and not traversed earlier and having lenskart domain, update them in global map as TRUE so that'
+            'not picked up again'
             if((url in self.globalTraversedSet) | (not (self.ifLenskartDomain(url)))  | (not(url.startswith('http')))):
-                pass
+                
+                try:
+                    lock = threading.RLock()
+                    lock.acquire(blocking=True)
                     
+                    ' update url to true so that its not picked up again '
+                    self.globalUrlMap.update({url:True})
+                finally:
+                    lock.release()
+
             else:
                 try:
                     'keep a copy so that its not traversed again'
