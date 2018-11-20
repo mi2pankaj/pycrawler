@@ -12,7 +12,6 @@ import threading
 import configparser
 from concurrent.futures.thread import ThreadPoolExecutor
 import asyncio
-from lib2to3.pgen2.token import ASYNC
 
 class SaareMethods():
 
@@ -35,21 +34,18 @@ class SaareMethods():
             maxThreads = int(self.get_config_param('crawler', 'max_threads'))
         
             print('started crawling with max threads ==> ', maxThreads)         
-            self.performTaskWithoutBrowser(startURL)
+            self.getInitialUrlsFromSuppliedRequest(startURL)
             
-            '===> crawl until traversed urls and parsed urls map are not same -- to review ==> '
-#             with ThreadPoolExecutor(max_workers=maxThreads) as executor:
-#                 while (len(self.globalDamnPagesMap) < len(self.globalUrlMap)):     
-#                     executor.submit(self.crawlUsingMap())
+            ''' create an event loop to iterate the global map - async way '''
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)        
 
-            while (len(self.globalDamnPagesMap) < len(self.globalUrlMap)):
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                
-                localMap = self.globalUrlMap
-                print('===>   size of local map ==> ', len(localMap))
-                loop.run_until_complete(asyncio.gather(*[self.crawlUsingMap() for url in list(self.globalUrlMap)]))
-                loop.close()
+            '===> crawl until traversed urls and parsed urls map are not same -- to review ==> '
+#             while (len(self.globalTraversedSet) < len(self.globalUrlMap)):
+#                 self.async_start_crawling()
+            
+            loop.run_until_complete(self.async_start_crawling_01)
+            loop.close()
             
             print()
             print('Length of global list after crawling ==> ', len(self.globalTraversedSet) , ' Length of global DAMN map after crawling ' , len(self.globalDamnPagesMap))
@@ -59,6 +55,37 @@ class SaareMethods():
         except Exception:
             traceback.print_exc(file=sys.stdout)
     
+
+    ''' async entry method for crawler '''    
+    def async_start_crawling_01(self):
+        
+        loop = asyncio.get_event_loop()
+        
+        ' using loop with thread pool executor '
+        while (len(self.globalTraversedSet) < len(self.globalUrlMap)):
+                with ThreadPoolExecutor(max_workers=10) as _executor:                    
+                    
+                    loop.run_in_executor(_executor, self.crawlUsingMap())
+
+
+    ''' async entry method for crawler '''    
+    def async_start_crawling(self):
+        
+        ''' create an event loop to iterate the global map - async way '''
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)        
+
+        localMap = self.globalUrlMap
+        print('===>  loop iteration started ==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==> ', len(localMap))
+        
+        'run a task -- this means execute crawlUsingMap while itearting the whole globalUrlMap '
+#         loop.run_until_complete(asyncio.gather(*[self.crawlUsingMap() for url in list(localMap)]))
+        
+        'run a task -- means execute crawlUsingMap method - which browse only one url at a time, here iteration will be controlled by outer loop '
+        loop.run_until_complete(asyncio.gather(*[self.crawlUsingMap()]))
+        loop.close()
+        print('===>  loop iteration ended ==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==>==> ')
+    
     
     ''' get config value from configuration '''
     def get_config_param(self, section, key):
@@ -67,6 +94,7 @@ class SaareMethods():
         self.config = config
 
         return self.config.get(section, key)
+  
   
     ''' get domain from received url '''
     def ifLenskartDomain(self, url):
@@ -79,6 +107,7 @@ class SaareMethods():
             return True
         else:
             return False
+        
         
     ''' launch crawler through executor using list '''
     async def crawlUsingList(self):
@@ -97,9 +126,7 @@ class SaareMethods():
             
             
     ''' launch crawler through executor using map '''
-#     @asyncio.coroutine
     async def crawlUsingMap(self):
-        
         url = ''
         for k,v in self.globalUrlMap.items():
             if(v==False):
@@ -113,7 +140,7 @@ class SaareMethods():
                     
                     print()
                     print("Task Being Executed {} by ", format(threading.current_thread()), 'global map now - ', len(self.globalUrlMap), ' and url is ==> '+url)
-                    self.performTaskWithoutBrowser(url)
+                    await self.performTaskWithoutBrowser(url)
  
                 finally:
                     lock.release()
@@ -121,8 +148,17 @@ class SaareMethods():
                 break
         
         
+    '''' added a method which return http response - for async handling '''    
+    async def get_http_response(self, url):
+        try:
+            return requests.get(url)
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
+        
+        
     ''' perform task ==> get url, browse it and check it if its a DAMN and then find the url list and return this '''
-    def performTaskWithoutBrowser(self, url):
+#     @asyncio.coroutine
+    async def performTaskWithoutBrowser(self, url):
         
         try:
             url = str(url)
@@ -143,14 +179,17 @@ class SaareMethods():
                     
                     'sending request to received url'                    
                     try:
-                        response = requests.get(url)
+#                         response = requests.get(url)
+                        response = await self.get_http_response(url)
                         pageSource = response.text
                         status_code = response.status_code
+
                     except Exception:
+#                         traceback.print_exc(file=sys.stdout)
                         pageSource = 'This page isn’t working'
                         status_code = int(200)
                     
-                    print(' ^^^^^^^^^^^^^^^^^ status_code ====> ', status_code, '  url ===> '+url)
+                    print(' ^^^^^^^^^^^^^^^^^ status_code ====> ', status_code, '  url ===> '+url )
                                 
                     if(str(status_code).startswith('4') | str(status_code).startswith('5')):
                         
@@ -214,4 +253,32 @@ class SaareMethods():
             
         except Exception:
             traceback.print_exc(file=sys.stdout)
+
+
+
+    ''' hit the received request, find the urls from response '''
+    def getInitialUrlsFromSuppliedRequest(self, url):
+        
+        'sending request to received url'                    
+        try:
+            url = str(url)
+            response = requests.get(url)
+            pageSource = response.text
+            
+            ''' apply regex to get urls from response - urls starting with http '''
+            urlList = re.findall('(?<=href=").*?(?=")', pageSource)
+                        
+            'convert received urls into set for uniqueness and map and remove non http urls + already browsed urls'
+            for x in urlList:
+                if ( (x.startswith('http')) & (self.ifLenskartDomain(x)) & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) ):
+                    self.globalUrlMap.update({x:False})
+                else:
+                    urlList.remove(x)
+                                                                                                                    
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
+            
+        print(' First List Of Received List Of URLs From Supplied Request ===> ', len(self.globalUrlMap))
+
+
 
