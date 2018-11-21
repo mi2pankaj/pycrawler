@@ -46,14 +46,15 @@ class SaareMethods():
             '===> crawl until traversed urls and parsed urls map are not same -- to review ==> '
             _executor = concurrent.futures.ThreadPoolExecutor(max_workers=maxThreads)
             
-            'synchronous crawling with executor ==> to use this -- remove async and await from all the used methods '
-#             loop.run_until_complete(self.synchronous_crawling_using_executor(_executor))
+#             'synchronous crawling with executor ==> to use this -- remove async and await from all the used methods '
+#             loop.run_until_complete(self.start_sync_crawling_with_executor(_executor))
             
+            '===> running code in async way '
             while (len(self.globalTraversedSet) < len(self.globalUrlMap)):
-#                 loop.run_in_executor(_executor, self.crawlUsingMap)
-                loop.run_in_executor(_executor,self.async_crawling)
-                
-            loop.run_until_complete(self.async_crawling)
+                loop.run_in_executor(_executor, self.start_async_crawling_without_executor)
+
+            loop.run_until_complete(self.start_async_crawling_without_executor)                
+
             loop.close()
             
             print()
@@ -66,31 +67,31 @@ class SaareMethods():
     
 
     ''' async entry method for crawler '''    
-    def synchronous_crawling_using_executor(self, _executor):
+    def start_sync_crawling_with_executor(self, _executor):
         try:
             loop = asyncio.get_event_loop()
             
             ' using loop with thread pool executor '
             while (len(self.globalTraversedSet) <= len(self.globalUrlMap)):
-                loop.run_in_executor(_executor, self.crawlUsingMap)
+                loop.run_in_executor(_executor, self.store_url_in_map)
                 
         except Exception:            
             traceback.print_exc(file=sys.stdout)
             
 
     ''' async entry method for crawler '''    
-    def async_crawling(self):
+    def start_async_crawling_without_executor(self):
         
         ''' create an event loop to iterate the global map - async way '''
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)        
                 
-        'run a task -- this means execute crawlUsingMap while itearting the whole globalUrlMap '
+        'run a task -- this means execute store_url_in_map while itearting the whole globalUrlMap '
 #         localMap = self.globalUrlMap
-#         loop.run_until_complete(asyncio.gather(*[self.crawlUsingMap() for url in list(localMap)]))
+#         loop.run_until_complete(asyncio.gather(*[self.store_url_in_map() for url in list(localMap)]))
         
-        'run a task -- means execute crawlUsingMap method - which browse only one url at a time, here iteration will be controlled by outer loop '
-        loop.run_until_complete(asyncio.gather(*[self.crawlUsingMap()]))
+        'run a task -- means execute store_url_in_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
+        loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
         
         loop.close()
     
@@ -128,13 +129,23 @@ class SaareMethods():
            
         for url in tempList:
             try:
-                self.performTaskWithoutBrowser(url)
+                self.send_http_request_parse_response(url)
             except Exception:
                 print('error ---> ')
             
+    
+    ''' get url from global map and browse --> and update further global variable '''   
+    async def pick_url_from_global_map(self):
+        
+        try:
+            url = self.store_url_in_map()
+            await self.send_http_request_parse_response(url)
+        except Exception:
+            traceback.print_exc(file=sys.stdout)
+      
             
     ''' launch crawler through executor using map '''
-    async def crawlUsingMap(self):
+    def store_url_in_map(self):
         
         try:
             url = ''
@@ -148,33 +159,36 @@ class SaareMethods():
                         url = k
                         self.globalUrlMap.update({k:True})
                         
-                        print()
-                        print("Time: "+datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +" Thread: ", format(threading.current_thread()), 'global map: ', len(self.globalUrlMap), ' url is ==> '+url)
-                        await self.performTaskWithoutBrowser(url)
+                        print("Store URL --> Time: "+datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +" Thread: ", format(threading.current_thread()), 'global map: ', len(self.globalUrlMap), ' url is ==> '+url)
      
                     finally:
                         lock.release()
-                                    
-                    break
+                        break
+                    
         except Exception:
             traceback.print_exc(file=sys.stdout)
-            
+        
+        return url
             
         
     '''' added a method which return http response - for async handling '''    
     async def get_http_response(self, url):
+        
         try:
             return requests.get(url)
         except Exception:
             traceback.print_exc(file=sys.stdout)
         
         
+        
     ''' perform task ==> get url, browse it and check it if its a DAMN and then find the url list and return this '''
 #     @asyncio.coroutine
-    async def performTaskWithoutBrowser(self, url):
+    async def send_http_request_parse_response(self, url):
         
         try:
             url = str(url)
+ 
+            print("Main Task --> Time: "+datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +" Thread: ", format(threading.current_thread()), 'global map: ', len(self.globalUrlMap), ' url is ==> '+url)
  
             'check only those urls which starts with http and not traversed earlier and having lenskart domain, update them in global map as TRUE so that'
             'not picked up again'
