@@ -149,7 +149,10 @@ class GenericMethods():
         
         try:
             url = ''
-            for k,v in self.globalUrlMap.items():
+            ' storing global map in local variable to avoid exception ==> RuntimeError: dictionary changed size during iteration '
+            localUrlMap = self.globalUrlMap
+            
+            for k,v in localUrlMap.items():
                 if(v==False):
                     try:
                         lock = threading.RLock()
