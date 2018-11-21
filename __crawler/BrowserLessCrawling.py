@@ -4,11 +4,11 @@ Created on 24-Nov-2017
 @author: pankaj.katiyar
 
 in any class return variable with self and in other class, create the instance of first class and then use the returned values like:
-    saareMethodObject = SaareMethods.SaareMethods()        
+    saareMethodObject = __crawler.GenericMethods()        
     saareMethodObject.getDriver("chrome")
     driver = saareMethodObject.driver
 '''
-from __crawler import SaareMethods
+from __crawler import GenericMethods
 '''
 use regex to (?<=href=").*?(?=") to find out the url in response and add them in a list if starts with http
 '''
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     startURL = 'https://lenskart.com'
     
     'create object of class'
-    saareMethodObject = SaareMethods.SaareMethods()
+    saareMethodObject = GenericMethods.GenericMethods()
     saareMethodObject.entryMethod(startURL)
     
     st2 = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')

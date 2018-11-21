@@ -32,7 +32,7 @@ if((m1.get('13') == None) ):
     print('huhuaa') 
 
 url = '#'
-if ( (not(url.startswith('http'))) & (not(SaareMethods.SaareMethods().ifLenskartDomain(url)))):
+if ( (not(url.startswith('http'))) & (not(SaareMethods.GenericMethods().ifLenskartDomain(url)))):
     print('remove')
 else:
     print('===== > updating url in glbal map '+url)

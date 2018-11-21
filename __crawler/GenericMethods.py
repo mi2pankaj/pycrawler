@@ -16,7 +16,7 @@ from datetime import datetime
 
 import asyncio
 
-class SaareMethods():
+class GenericMethods():
 
     'contains information about damn pages'
     globalDamnPagesMap = {}
@@ -51,7 +51,7 @@ class SaareMethods():
             
             '===> running code in async way '
             while (len(self.globalTraversedSet) < len(self.globalUrlMap)):
-                loop.run_in_executor(_executor, self.start_async_crawling_without_executor)
+                loop.run_in_executor(None, self.start_async_crawling_without_executor)
 
             loop.run_until_complete(self.start_async_crawling_without_executor)                
 
@@ -73,7 +73,7 @@ class SaareMethods():
             
             ' using loop with thread pool executor '
             while (len(self.globalTraversedSet) <= len(self.globalUrlMap)):
-                loop.run_in_executor(_executor, self.store_url_in_map)
+                loop.run_in_executor(_executor, self.get_url_from_map)
                 
         except Exception:            
             traceback.print_exc(file=sys.stdout)
@@ -86,12 +86,12 @@ class SaareMethods():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)        
                 
-        'run a task -- this means execute store_url_in_map while itearting the whole globalUrlMap '
-#         localMap = self.globalUrlMap
-#         loop.run_until_complete(asyncio.gather(*[self.store_url_in_map() for url in list(localMap)]))
+        'run a task -- this means execute get_url_from_map while itearting the whole globalUrlMap '
+        localMap = self.globalUrlMap
+        loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map() for url in localMap]))
         
-        'run a task -- means execute store_url_in_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
-        loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
+#         'run a task -- means execute get_url_from_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
+#         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
         
         loop.close()
     
@@ -138,14 +138,14 @@ class SaareMethods():
     async def pick_url_from_global_map(self):
         
         try:
-            url = self.store_url_in_map()
+            url = self.get_url_from_map()
             await self.send_http_request_parse_response(url)
         except Exception:
             traceback.print_exc(file=sys.stdout)
-      
+                  
             
     ''' launch crawler through executor using map '''
-    def store_url_in_map(self):
+    def get_url_from_map(self):
         
         try:
             url = ''
@@ -159,7 +159,7 @@ class SaareMethods():
                         url = k
                         self.globalUrlMap.update({k:True})
                         
-                        print("Store URL --> Time: "+datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +" Thread: ", format(threading.current_thread()), 'global map: ', len(self.globalUrlMap), ' url is ==> '+url)
+#                         print("Store URL --> Time: "+datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +" Thread: ", format(threading.current_thread()), 'global map: ', len(self.globalUrlMap), ' url is ==> '+url)
      
                     finally:
                         lock.release()
@@ -186,9 +186,8 @@ class SaareMethods():
     async def send_http_request_parse_response(self, url):
         
         try:
+            print()
             url = str(url)
- 
-            print("Main Task --> Time: "+datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +" Thread: ", format(threading.current_thread()), 'global map: ', len(self.globalUrlMap), ' url is ==> '+url)
  
             'check only those urls which starts with http and not traversed earlier and having lenskart domain, update them in global map as TRUE so that'
             'not picked up again'
@@ -225,7 +224,7 @@ class SaareMethods():
                         pageSource = 'This page isn’t working'
                         status_code = int(200)
                     
-                    print(' ^^^^^^^^^^^^^^^^^ status_code ====> ', status_code, '  url ===> '+url )
+                    print(' ^^^^^^^^^^^^^^^^^ status_code ====> ', status_code, '  url ===> '+url +'  ^^^^^^^^^^^^^^^^^ ')
                                 
                     if(str(status_code).startswith('4') | str(status_code).startswith('5')):
                         
@@ -272,9 +271,10 @@ class SaareMethods():
                                     self.globalUrlMap.update({x:False})
                                 else:
                                     urlList.remove(x)
-
-                            print('After Updating, traversed ==> ',len(self.globalTraversedSet), ' global map ==> ', len(self.globalUrlMap), ' global damn map ==> ' , len(self.globalDamnPagesMap))
-                                                    
+#                             '%Y-%m-%d %H:%M:%S'
+                            print(datetime.fromtimestamp(time.time()).strftime('%H:%M:%S') +' Thread: ', format(threading.current_thread().getName()), ' global map: ', len(self.globalUrlMap), ' traversed: ',len(self.globalTraversedSet), ' damn: ' , len(self.globalDamnPagesMap), ' url ==> '+url)
+                            print()
+                                                                                
                         except Exception:
                             traceback.print_exc(file=sys.stdout)
                             

@@ -30,7 +30,7 @@ if __name__ == '__main__':
     future = asyncio.run_coroutine_threadsafe(sampleClassObject.fetch('http://www.google.com'), new_loop)
 
     # Give it some async work - 2
-    saareMethodObject = SaareMethods.SaareMethods()
+    saareMethodObject = SaareMethods.GenericMethods()
     future = asyncio.run_coroutine_threadsafe(saareMethodObject.entryMethod('http://www.lenskart.com'), new_loop)
     
     # Wait for the result

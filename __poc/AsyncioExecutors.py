@@ -7,7 +7,6 @@ import requests
 import asyncio
 from concurrent.futures.process import ProcessPoolExecutor
 
-
 def blocking_function():
     print('started ---> ')
     response = requests.get('https://breadcrumbscollector.tech/feed/')
