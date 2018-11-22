@@ -227,7 +227,7 @@ class GenericMethods():
                         pageSource = 'This page isn’t working'
                         status_code = int(200)
                     
-                    self.__py_logger.info(f' status_code ====> {status_code},  url ===> {url} ')
+#                     self.__py_logger.info(f' status_code ====> {status_code},  url ===> {url} ')
                                 
                     if(str(status_code).startswith('4') | str(status_code).startswith('5')):
                         
