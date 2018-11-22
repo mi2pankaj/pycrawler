@@ -5,6 +5,7 @@ Created on 21-Nov-2018
 '''
 import aiohttp
 import asyncio
+from __crawler_logging_module.crawler_logging import __py_logger
 
 async def print_preview(url):
     # connect to the server
@@ -15,7 +16,7 @@ async def print_preview(url):
             response = await response.text()
 
             # print first 3 not empty lines
-            count = 0
+#             count = 0
             lines = list(filter(lambda x: len(x) > 0, response.split('\n')))
             print('-'*80)
             for line in lines[:3]:
@@ -41,6 +42,10 @@ def print_all_pages():
 if __name__ == '__main__':
 
     print_all_pages()
+    
+    #calling logger module
+
+    __py_logger.info('hahahaa ===>hahahaa ===>hahahaa ===>hahahaa ===>hahahaa ===>hahahaa ===>hahahaa ===>')
     
     pass
     

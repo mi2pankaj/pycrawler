@@ -5,16 +5,13 @@ Created on 23-Nov-2017
 '''
 
 import re
-import traceback
-import sys
 import requests
 import threading
 import configparser
 import concurrent.futures
-import time
-from datetime import datetime
-
 import asyncio
+import logging
+
 
 class GenericMethods():
 
@@ -28,15 +25,18 @@ class GenericMethods():
     globalTraversedSet = set()
         
     globalTaskList =[]
-        
+    
+    __py_logger = logging.getLogger('GenericMethods')
+    
     ''' this is the main entry method '''
     def entryMethod(self, startURL):
         
-        try:        
+        try:            
+            
             'get max threads to parse'
             maxThreads = int(self.get_config_param('crawler', 'max_threads'))
-        
-            print('started crawling with max threads ==> ', maxThreads)         
+            
+            self.__py_logger.info(f'started crawling with max threads ==> {str(maxThreads)}')         
             self.getInitialUrlsFromSuppliedRequest(startURL)
             
             ''' create an event loop to iterate the global map - async way '''
@@ -57,13 +57,11 @@ class GenericMethods():
 
             loop.close()
             
-            print()
-            print('Length of global list after crawling ==> ', len(self.globalTraversedSet) , ' Length of global DAMN map after crawling ' , len(self.globalDamnPagesMap))
-    
-            print(self.globalDamnPagesMap)
+            self.__py_logger.info('Length of global list after crawling ==> ', len(self.globalTraversedSet) , ' Length of global DAMN map after crawling ' , len(self.globalDamnPagesMap))
+            self.__py_logger.info(self.globalDamnPagesMap)
     
         except Exception:
-            traceback.print_exc(file=sys.stdout)
+            self.__py_logger.error('Exception Occurred: ', exc_info=True)
     
 
     ''' async entry method for crawler '''    
@@ -76,7 +74,7 @@ class GenericMethods():
                 loop.run_in_executor(_executor, self.get_url_from_map)
                 
         except Exception:            
-            traceback.print_exc(file=sys.stdout)
+            self.__py_logger.error('Exception Occurred: ', exc_info=True)
             
 
     ''' async entry method for crawler '''    
@@ -87,11 +85,12 @@ class GenericMethods():
         asyncio.set_event_loop(loop)        
                 
         'run a task -- this means execute get_url_from_map while itearting the whole globalUrlMap '
-        localMap = self.globalUrlMap
-        loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map() for url in localMap]))
+#         localMap = self.globalUrlMap
+#         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map() for url in localMap]))
         
-#         'run a task -- means execute get_url_from_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
+        'run a task -- means execute get_url_from_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
 #         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
+        loop.run_until_complete(self.pick_url_from_global_map())
         
         loop.close()
     
@@ -110,7 +109,7 @@ class GenericMethods():
         url1 = url[url.find('//')+2:]
         url2 = url1[:url1.find('/')]
         
-#         print('domain: '+url2 + ' from received url: '+url)
+#         self.__py_logger.info('domain: '+url2 + ' from received url: '+url)
         
         if url2.find('lenskart') > -1:
             return True
@@ -125,13 +124,13 @@ class GenericMethods():
         'global list will be updated dynamically by many threads '
         tempList = self.globalUrlList     
         
-        print(' =======  iteration list is now  ==> ', len(tempList))
+        self.__py_logger.info(' =======  iteration list is now  ==> ', len(tempList))
            
         for url in tempList:
             try:
                 self.send_http_request_parse_response(url)
             except Exception:
-                print('error ---> ')
+                self.__py_logger.error('Exception: ', exc_info=True)
             
     
     ''' get url from global map and browse --> and update further global variable '''   
@@ -141,7 +140,7 @@ class GenericMethods():
             url = self.get_url_from_map()
             await self.send_http_request_parse_response(url)
         except Exception:
-            traceback.print_exc(file=sys.stdout)
+            self.__py_logger.error('Exception Occurred: ', exc_info=True)
                   
             
     ''' launch crawler through executor using map '''
@@ -162,14 +161,14 @@ class GenericMethods():
                         url = k
                         self.globalUrlMap.update({k:True})
                         
-#                         print("Store URL --> Time: "+datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +" Thread: ", format(threading.current_thread()), 'global map: ', len(self.globalUrlMap), ' url is ==> '+url)
+#                         self.__py_logger.info("Store URL --> Time: "+datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +" Thread: ", format(threading.current_thread()), 'global map: ', len(self.globalUrlMap), ' url is ==> '+url)
      
                     finally:
                         lock.release()
                         break
                     
         except Exception:
-            traceback.print_exc(file=sys.stdout)
+            self.__py_logger.error('Exception Occurred: ', exc_info=True)
         
         return url
             
@@ -180,7 +179,7 @@ class GenericMethods():
         try:
             return requests.get(url)
         except Exception:
-            traceback.print_exc(file=sys.stdout)
+            self.__py_logger.error('Exception Occurred: ', exc_info=True)
         
         
         
@@ -189,7 +188,7 @@ class GenericMethods():
     async def send_http_request_parse_response(self, url):
         
         try:
-            print()
+            
             url = str(url)
  
             'check only those urls which starts with http and not traversed earlier and having lenskart domain, update them in global map as TRUE so that'
@@ -223,15 +222,15 @@ class GenericMethods():
                         status_code = response.status_code
 
                     except Exception:
-#                         traceback.print_exc(file=sys.stdout)
+#                         self.__py_logger.error('Exception Occurred: ', exc_info=True)
                         pageSource = 'This page isn’t working'
                         status_code = int(200)
                     
-                    print(' ^^^^^^^^^^^^^^^^^ status_code ====> ', status_code, '  url ===> '+url +'  ^^^^^^^^^^^^^^^^^ ')
+                    self.__py_logger.info(f' ^^^^^^^^^^^^^^^^^ status_code ====> {status_code},  url ===> {url}  ^^^^^^^^^^^^^^^^^ ')
                                 
                     if(str(status_code).startswith('4') | str(status_code).startswith('5')):
                         
-                        print('Found a non responsive page  ==> '+url + " status code ==> ", status_code)
+                        self.__py_logger.info(f' Found a non responsive page  ==> {url} with status code ==> {status_code}')
                         
                         lock = threading.RLock()
                         lock.acquire(blocking=True)
@@ -241,7 +240,7 @@ class GenericMethods():
                             lock.release()
                             
                     elif(pageSource.__contains__('DAMN!!')):
-                        print('Found a DAMN Page  ==> '+url)
+                        self.__py_logger.info('Found a DAMN Page  ==> '+url)
                             
                         lock = threading.RLock()
                         lock.acquire(blocking=True)
@@ -251,7 +250,7 @@ class GenericMethods():
                             lock.release()
                     
                     elif(pageSource.__contains__("This page isn’t working")):
-                        print("This page isn't working ==> "+url)
+                        self.__py_logger.info("This page isn't working ==> "+url)
                              
                         lock = threading.RLock()
                         lock.acquire(blocking=True)
@@ -275,23 +274,21 @@ class GenericMethods():
                                 else:
                                     urlList.remove(x)
 #                             '%Y-%m-%d %H:%M:%S'
-                            print(datetime.fromtimestamp(time.time()).strftime('%H:%M:%S') +' Thread: ', format(threading.current_thread().getName()), ' global map: ', len(self.globalUrlMap), ' traversed: ',len(self.globalTraversedSet), ' damn: ' , len(self.globalDamnPagesMap), ' url ==> '+url)
-                            print()
+                            self.__py_logger.info(f" Thread: {format(threading.current_thread().getName())},  global map: {len(self.globalUrlMap)}, traversed: {len(self.globalTraversedSet)}, damn: {len(self.globalDamnPagesMap)}, url ==> {url}")
                                                                                 
                         except Exception:
-                            traceback.print_exc(file=sys.stdout)
+                            self.__py_logger.error('Exception Occurred: ', exc_info=True)
                             
                         finally:
                             lock.release()
                             
                 except Exception:
-                    print('exception occurred with url ==> ' +url)
-                    traceback.print_exc(file=sys.stdout)
+                    self.__py_logger.error(f'Exception Occurred With {url} ', exc_info=True)
                     
-#             print('final global traversed set ==> ',len(self.globalTraversedSet), ' global map ==> ', len(self.globalUrlMap), ' global DAMN map ==> ' , len(self.globalDamnPagesMap))
+#             self.__py_logger.info('final global traversed set ==> ',len(self.globalTraversedSet), ' global map ==> ', len(self.globalUrlMap), ' global DAMN map ==> ' , len(self.globalDamnPagesMap))
             
         except Exception:
-            traceback.print_exc(file=sys.stdout)
+            self.__py_logger.error('Exception Occurred: ', exc_info=True)
 
 
 
@@ -315,9 +312,9 @@ class GenericMethods():
                     urlList.remove(x)
                                                                                                                     
         except Exception:
-            traceback.print_exc(file=sys.stdout)
+            self.__py_logger.error('Exception Occurred: ', exc_info=True)
             
-        print(' First List Of Received List Of URLs From Supplied Request ===> ', len(self.globalUrlMap))
+        self.__py_logger.info(f' First List Of Received List Of URLs From Supplied Request ===>  {len(self.globalUrlMap)}')
 
 
 
