@@ -12,7 +12,7 @@ import os
 
 # get the log file 
 __logfile = os.path.dirname(os.path.abspath(''))+'/logs/pyc.log'
-logging.basicConfig(level=logging.NOTSET, filemode='w', filename=__logfile, format=' %(asctime)s - %(filename)s - %(funcName)s - %(levelname)s - %(message)s ')
+logging.basicConfig(level=logging.NOTSET, filemode='w', filename=__logfile, format=' %(asctime)s - %(filename)s - %(funcName)s - %(levelname)s - %(threadName)s - %(message)s ')
 __py_logger = logging.getLogger(__name__)
 
 # stop logging from urllib3 and asyncio

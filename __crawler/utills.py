@@ -28,6 +28,8 @@ class GenericMethods():
     
     __py_logger = logging.getLogger('GenericMethods')
     
+    specificDomain =''
+    
     ''' this is the main entry method '''
     def entryMethod(self, startURL):
         
@@ -35,8 +37,9 @@ class GenericMethods():
             
             'get max threads to parse'
             maxThreads = int(self.get_config_param('crawler', 'max_threads'))
+            self.specificDomain = self.get_config_param('crawler', 'specificDomain')
             
-            self.__py_logger.info(f'started crawling with max threads ==> {str(maxThreads)}')         
+            self.__py_logger.info(f' started crawling with max threads ==> {str(maxThreads)}  ==> looking for domain => {self.specificDomain} ')         
             self.getInitialUrlsFromSuppliedRequest(startURL)
             
             ''' create an event loop to iterate the global map - async way '''
@@ -111,7 +114,7 @@ class GenericMethods():
         
 #         self.__py_logger.info('domain: '+url2 + ' from received url: '+url)
         
-        if url2.find('lenskart') > -1:
+        if url2.find(self.specificDomain) > -1:
             return True
         else:
             return False
@@ -160,8 +163,6 @@ class GenericMethods():
                         ' update url to true so that its not picked up again '
                         url = k
                         self.globalUrlMap.update({k:True})
-                        
-#                         self.__py_logger.info("Store URL --> Time: "+datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S') +" Thread: ", format(threading.current_thread()), 'global map: ', len(self.globalUrlMap), ' url is ==> '+url)
      
                     finally:
                         lock.release()
@@ -226,7 +227,7 @@ class GenericMethods():
                         pageSource = 'This page isn’t working'
                         status_code = int(200)
                     
-                    self.__py_logger.info(f' ^^^^^^^^^^^^^^^^^ status_code ====> {status_code},  url ===> {url}  ^^^^^^^^^^^^^^^^^ ')
+                    self.__py_logger.info(f' status_code ====> {status_code},  url ===> {url} ')
                                 
                     if(str(status_code).startswith('4') | str(status_code).startswith('5')):
                         
@@ -274,7 +275,7 @@ class GenericMethods():
                                 else:
                                     urlList.remove(x)
 #                             '%Y-%m-%d %H:%M:%S'
-                            self.__py_logger.info(f" Thread: {format(threading.current_thread().getName())},  global map: {len(self.globalUrlMap)}, traversed: {len(self.globalTraversedSet)}, damn: {len(self.globalDamnPagesMap)}, url ==> {url}")
+                            self.__py_logger.info(f" global map: {len(self.globalUrlMap)}, traversed: {len(self.globalTraversedSet)}, damn: {len(self.globalDamnPagesMap)}, url ==> {url}")
                                                                                 
                         except Exception:
                             self.__py_logger.error('Exception Occurred: ', exc_info=True)
