@@ -4,7 +4,7 @@ from builtins import str
 
 
 import urllib3
-from __crawler import SaareMethods
+from __crawler import utills
 
 
 a = 1;
@@ -32,7 +32,7 @@ if((m1.get('13') == None) ):
     print('huhuaa') 
 
 url = '#'
-if ( (not(url.startswith('http'))) & (not(SaareMethods.GenericMethods().ifLenskartDomain(url)))):
+if ( (not(url.startswith('http'))) & (not(utills.GenericMethods().ifLenskartDomain(url)))):
     print('remove')
 else:
     print('===== > updating url in glbal map '+url)
