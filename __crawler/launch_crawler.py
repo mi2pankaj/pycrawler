@@ -24,17 +24,19 @@ if __name__ == '__main__':
     __py_logger.info('======================  STARTING NOW ====================================================================')
 
     st1 = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-    startURL = 'https://lenskart.com'
-    
+
     'create object of class'
-    saareMethodObject = utills.GenericMethods()
-    saareMethodObject.entryMethod(startURL)
+    utillsObject = utills.GenericMethods()
+    startURL = utillsObject.get_config_param('crawler', 'targetURL')
     
+    'start crawling'
+    utillsObject.entryMethod(startURL)
+        
     st2 = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     
     __py_logger.info(' started crawler at: ==> '+st1 + '  ended at: ==> '+st2)
     __py_logger.info('')
-    __py_logger.info(f' ===> dammn map ===> {saareMethodObject.globalDamnPagesMap}')
+    __py_logger.info(f' ===> dammn map ===> {utillsObject.globalDamnPagesMap}')
     __py_logger.info('=========================================================================================================')
     
     pass
