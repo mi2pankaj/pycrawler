@@ -55,9 +55,11 @@ class GenericMethods():
             
             '===> running code in async way '
             while (len(self.globalTraversedSet) != len(self.globalUrlMap)):
-                loop.run_in_executor(None, self.start_async_crawling_without_executor)
+                url = self.get_url_from_map()
+#                 loop.run_in_executor(_executor, self.start_async_crawling_without_executor, url)
+                loop.run_in_executor(None, self.start_async_crawling_without_executor, url)
 
-            loop.run_until_complete(self.start_async_crawling_without_executor)                
+#             loop.run_until_complete(self.start_async_crawling_without_executor, url)                
 
             loop.close()
             
@@ -81,8 +83,26 @@ class GenericMethods():
             self.__py_logger.error('Exception Occurred: ', exc_info=True)
             
 
+#     ''' async entry method for crawler '''    
+#     def start_async_crawling_without_executor(self):
+#         
+#         ''' create an event loop to iterate the global map - async way '''
+#         loop = asyncio.new_event_loop()
+#         asyncio.set_event_loop(loop)        
+#                 
+#         'run a task -- this means execute get_url_from_map while itearting the whole globalUrlMap '
+# #         localMap = self.globalUrlMap
+# #         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map() for url in localMap]))
+#         
+#         'run a task -- means execute get_url_from_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
+# #         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
+#         loop.run_until_complete(self.pick_url_from_global_map())
+#         
+#         loop.close()
+    
+    
     ''' async entry method for crawler '''    
-    def start_async_crawling_without_executor(self):
+    def start_async_crawling_without_executor(self, url):
         
         ''' create an event loop to iterate the global map - async way '''
         loop = asyncio.new_event_loop()
@@ -94,9 +114,10 @@ class GenericMethods():
         
         'run a task -- means execute get_url_from_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
 #         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
-        loop.run_until_complete(self.pick_url_from_global_map())
+        loop.run_until_complete(self.send_http_request_parse_response(url))
         
         loop.close()
+    
     
     
     ''' get config value from configuration '''
@@ -119,22 +140,6 @@ class GenericMethods():
             return True
         else:
             return False
-        
-        
-    ''' launch crawler through executor using list '''
-    async def crawlUsingList(self):
-#         while len(self.globalUrlList) > 0:   
-        
-        'global list will be updated dynamically by many threads '
-        tempList = self.globalUrlList     
-        
-        self.__py_logger.info(' =======  iteration list is now  ==> ', len(tempList))
-           
-        for url in tempList:
-            try:
-                self.send_http_request_parse_response(url)
-            except Exception:
-                self.__py_logger.error('Exception: ', exc_info=True)
             
     
     ''' get url from global map and browse --> and update further global variable '''   
@@ -145,33 +150,35 @@ class GenericMethods():
             await self.send_http_request_parse_response(url)
         except Exception:
             self.__py_logger.error('Exception Occurred: ', exc_info=True)
-                  
-            
+
+                      
     ''' launch crawler through executor using map '''
     def get_url_from_map(self):
         
         try:
+            lock = threading.RLock()
+            lock.acquire(blocking=True)
+            
             url = ''
+            
             ' storing global map in local variable to avoid exception ==> RuntimeError: dictionary changed size during iteration '
             localUrlMap = self.globalUrlMap
             
-            for k,v in localUrlMap.items():
-                if(v==False):
-                    try:
-                        lock = threading.RLock()
-                        lock.acquire(blocking=True)
-                         
-                        ' update url to true so that its not picked up again '
-                        url = k
-                        self.globalUrlMap.update({k:True})
+            for k,v in list(localUrlMap.items()):
+                if(v==False):                    
+                    
+                    ' update url to true so that its not picked up again '
+                    url = k
+                    self.globalUrlMap.update({k:True})
      
-                    finally:
-                        lock.release()
-                        break
+                    break
                     
         except Exception:
-            self.__py_logger.error('Exception Occurred: ', exc_info=True)
+            self.__py_logger.error('Exception Occurred While Getting URL From Global Map: ', exc_info=True)
         
+        finally:
+            lock.release()
+            
         return url
             
         
@@ -289,19 +296,22 @@ class GenericMethods():
                             lock = threading.RLock()
                             lock.acquire(blocking=True)
                         
-                            'convert received urls into set for uniqueness and map and remove non http urls + already browsed urls'
+                            'add received urls in global map and remove non http urls + already browsed urls + exclude image url.. as they are slow for now ..'
                             for x in urlList:
-                                if ( (x.startswith('http')) & (self.ifLenskartDomain(x)) & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) ):
+                                if ( (x.startswith('http')) & (self.ifLenskartDomain(x)) 
+                                     & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) 
+                                     & (not x.endswith('.jpg')) ):
+                                    
                                     self.globalUrlMap.update({x:False})
                                 else:
                                     urlList.remove(x)
 #                             '%Y-%m-%d %H:%M:%S'
-                            self.__py_logger.info(f" global map: {len(self.globalUrlMap)}, traversed: {len(self.globalTraversedSet)}, damn: {len(self.globalDamnPagesMap)}, url ==> {url}")
                                                                                 
                         except Exception:
                             self.__py_logger.error('Exception Occurred: ', exc_info=True)
                             
                         finally:
+                            self.__py_logger.info(f" global map: {len(self.globalUrlMap)}, traversed: {len(self.globalTraversedSet)}, damn: {len(self.globalDamnPagesMap)}, url ==> {url}")
                             lock.release()
                             
                 except Exception:
