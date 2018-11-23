@@ -54,7 +54,7 @@ class GenericMethods():
             
             '===> running code in async way '
             while (len(self.globalTraversedSet) < len(self.globalUrlMap)):
-                loop.run_in_executor(None, self.start_async_crawling_without_executor)
+                loop.run_in_executor(_executor, self.start_async_crawling_without_executor)
 
             loop.run_until_complete(self.start_async_crawling_without_executor)                
 
