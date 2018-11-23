@@ -54,18 +54,23 @@ class GenericMethods():
 #             loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
             
             #1. multi-threaded but code not exiting, need to wait for code completion
+#             i=1
             _task_list =[]
-            url = 'none'
-            while(url != ''):
+            while(len(self.globalTraversedSet) < len(self.globalUrlMap)):
                 
                 url = self.get_url_from_global_map()
-                _task = loop.run_in_executor(None, self.start_async_crawling_without_executor, url)
-                _task_list.append(_task)
                 
-                print(len(_task_list))
-            
+                if(url != ''):
+                    _task = loop.run_in_executor(None, self.start_async_crawling_without_executor, url)                    
+                    _task_list.append(_task)
+                    
+#                     print(i," ==> "+url)
+#                     i=i+1
+                
+            loop.run_until_complete(asyncio.wait(_task_list))
+                                    
             'need to wait until all tasks submitted to executors are completed.. --> need fix here '
-            loop.run_until_complete(asyncio.wait(_task_list))     
+#             loop.run_until_complete(asyncio.wait(_task_list))
             
             #2.  using main thread only -- single threaded
 #             _task_list = []
@@ -319,7 +324,7 @@ class GenericMethods():
                                                                                                                     
         except Exception:
             self._py_logger.error('Exception Occurred: ', exc_info=True)
-            
+                
         self._py_logger.info(f' First List Of Received List Of URLs From Supplied Request ===>  {len(self.globalUrlMap)}')
 
 
