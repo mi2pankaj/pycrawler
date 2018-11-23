@@ -11,6 +11,7 @@ import configparser
 import concurrent.futures
 import asyncio
 import logging
+from __crawler_logging_module.crawler_logging import __py_logger
 
 
 class GenericMethods():
@@ -53,8 +54,8 @@ class GenericMethods():
 #             loop.run_until_complete(self.start_sync_crawling_with_executor(_executor))
             
             '===> running code in async way '
-            while (len(self.globalTraversedSet) < len(self.globalUrlMap)):
-                loop.run_in_executor(_executor, self.start_async_crawling_without_executor)
+            while (len(self.globalTraversedSet) != len(self.globalUrlMap)):
+                loop.run_in_executor(None, self.start_async_crawling_without_executor)
 
             loop.run_until_complete(self.start_async_crawling_without_executor)                
 
@@ -176,12 +177,21 @@ class GenericMethods():
         
     '''' added a method which return http response - for async handling '''    
     async def get_http_response(self, url):
-        
         try:
-            return requests.get(url)
-        except Exception:
-            self.__py_logger.error('Exception Occurred: ', exc_info=True)
-        
+            response = requests.get(url)
+            return response  
+        except Exception as e:
+            self.__py_logger.error(f' Exception Occurred While Getting Response From URL: {url}', exc_info=True)
+            # assigning some value so that in case of exception below status code condition doesn't break coz there will be no status code in exception.
+            response.pageSource = 'Exception_While_Browsing_URL'
+            response.status_code = int(777)
+            try:      
+                lock = threading.RLock()
+                lock.acquire(blocking=True)      
+                self.globalDamnPagesMap.update({url : str(e)})
+                __py_logger.info(f' {url} is updated in damm map. ')
+            finally:
+                lock.release()      
         
         
     ''' perform task ==> get url, browse it and check it if its a DAMN and then find the url list and return this '''
@@ -208,9 +218,9 @@ class GenericMethods():
             else:
                 try:
                     'keep a copy so that its not traversed again'
-                    lock = threading.RLock()
-                    lock.acquire(blocking=True)
                     try:
+                        lock = threading.RLock()
+                        lock.acquire(blocking=True)
                         self.globalTraversedSet.add(url)
                     finally:
                         lock.release() 
@@ -222,30 +232,40 @@ class GenericMethods():
                         pageSource = response.text
                         status_code = response.status_code
 
-                    except Exception:
-#                         self.__py_logger.error('Exception Occurred: ', exc_info=True)
-                        pageSource = 'This page isn’t working'
-                        status_code = int(200)
-                    
-#                     self.__py_logger.info(f' status_code ====> {status_code},  url ===> {url} ')
-                                
+                    except Exception as e:
+                        self.__py_logger.error(f' Exception Occurred While Browsing URL: {url}', exc_info=True)
+                        pageSource = 'Exception_While_Browsing_URL'
+                        # assigning some value so that in case of exception below status code condition doesn't break coz there will be no status code in exception.
+                        status_code = int(777)
+                        
+                        try:      
+                            lock = threading.RLock()
+                            lock.acquire(blocking=True)      
+                            self.globalDamnPagesMap.update({url : str(e)})
+                        finally:
+                            lock.release()
+                                                    
                     if(str(status_code).startswith('4') | str(status_code).startswith('5')):
                         
                         self.__py_logger.info(f' Found a non responsive page  ==> {url} with status code ==> {status_code}')
                         
-                        lock = threading.RLock()
-                        lock.acquire(blocking=True)
-                        try:            
+                        try:
+                            lock = threading.RLock()
+                            lock.acquire(blocking=True)        
                             self.globalDamnPagesMap.update({url : status_code})
                         finally:
                             lock.release()
-                            
+                    
+                    # in case of exception - don't do anything - already handled while browsing.
+                    elif(pageSource.__contains__('Exception_While_Browsing_URL')):
+                        pass
+                    
                     elif(pageSource.__contains__('DAMN!!')):
                         self.__py_logger.info('Found a DAMN Page  ==> '+url)
-                            
-                        lock = threading.RLock()
-                        lock.acquire(blocking=True)
-                        try:            
+
+                        try:    
+                            lock = threading.RLock()
+                            lock.acquire(blocking=True)        
                             self.globalDamnPagesMap.update({url : 'DAMN'})
                         finally:
                             lock.release()
@@ -253,9 +273,9 @@ class GenericMethods():
                     elif(pageSource.__contains__("This page isn’t working")):
                         self.__py_logger.info("This page isn't working ==> "+url)
                              
-                        lock = threading.RLock()
-                        lock.acquire(blocking=True)
-                        try:            
+                        try:      
+                            lock = threading.RLock()
+                            lock.acquire(blocking=True)      
                             self.globalDamnPagesMap.update({url : 'Not_Working_Page'})
                         finally:
                             lock.release()
@@ -265,9 +285,10 @@ class GenericMethods():
                         urlList = re.findall('(?<=href=").*?(?=")', pageSource)
                         
                         ''' update the global url set and list '''
-                        lock = threading.RLock()
-                        lock.acquire(blocking=True)
                         try:
+                            lock = threading.RLock()
+                            lock.acquire(blocking=True)
+                        
                             'convert received urls into set for uniqueness and map and remove non http urls + already browsed urls'
                             for x in urlList:
                                 if ( (x.startswith('http')) & (self.ifLenskartDomain(x)) & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) ):
