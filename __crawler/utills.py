@@ -54,24 +54,28 @@ class GenericMethods():
 #             loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
             
             #1. multi-threaded but code not exiting, need to wait for code completion
+            _task_list =[]
             url = 'none'
             while(url != ''):
+                
                 url = self.get_url_from_global_map()
                 _task = loop.run_in_executor(None, self.start_async_crawling_without_executor, url)
-              
-            loop.run_until_complete(_task)
-                    
+                _task_list.append(_task)
+                
+                print(len(_task_list))
+            
+            'need to wait until all tasks submitted to executors are completed.. --> need fix here '
+            loop.run_until_complete(asyncio.wait(_task_list))     
+            
             #2.  using main thread only -- single threaded
 #             _task_list = []
 #             url = 'none'
 #             while(url != ''):
 #                 url = self.get_url_from_global_map()
 #                 _task = loop.create_task(self.start_async_crawling_without_executor(url))
-#                 _task_list.append(_task)
-#                                  
+#                 _task_list.append(_task) 
 #             loop.run_until_complete(asyncio.wait(_task_list))
                 
-            
 #             loop.close()
             
             self._py_logger.info(f' Length of global list after crawling: {len(self.globalTraversedSet)} Length of global DAMN map after crawling: {len(self.globalDamnPagesMap)}')
@@ -205,7 +209,7 @@ class GenericMethods():
         
         try:
             url = str(url)
- 
+            
             'check only those urls which starts with http and not traversed earlier and having lenskart domain, update them in global map as TRUE so that'
             'not picked up again'
             if((url in self.globalTraversedSet) | (not (self.ifLenskartDomain(url)))  | (not(url.startswith('http')))):
@@ -269,9 +273,10 @@ class GenericMethods():
                         'add received urls in global map and remove non http urls + already browsed urls + exclude image url.. as they are slow for now ..'
                         for x in urlList:
                             try:
+                                                                
                                 if ( (x.startswith('http')) & (self.ifLenskartDomain(x)) 
                                     & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) 
-                                    & (not (url in self.globalTraversedSet))    #debug condition to use less urls
+#                                     & (not (url in self.globalTraversedSet))    #debug condition to use less urls
                                     & (not (x.lower().endswith('.jpg') | x.lower().endswith('.png') | x.lower().endswith('.jpeg'))) ):
                                     
                                     self.globalUrlMap.update({x:False})
