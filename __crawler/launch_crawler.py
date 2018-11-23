@@ -31,13 +31,5 @@ if __name__ == '__main__':
     
     'start crawling'
     utillsObject.entryMethod(startURL)
-        
-    st2 = datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     
-    __py_logger.info(' started crawler at: ==> '+st1 + '  ended at: ==> '+st2)
-    __py_logger.info('')
-    __py_logger.info(f' ===> dammn map ===> {utillsObject.globalDamnPagesMap}')
-    __py_logger.info('=========================================================================================================')
-    
-    pass
 

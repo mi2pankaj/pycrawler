@@ -5,7 +5,6 @@ Created on 21-Nov-2018
 '''
 import aiohttp
 import asyncio
-from __crawler_logging_module.crawler_logging import __py_logger
 
 async def print_preview(url):
     # connect to the server
@@ -40,12 +39,7 @@ def print_all_pages():
     
 
 if __name__ == '__main__':
-
     print_all_pages()
-    
-    #calling logger module
-
-    __py_logger.info('hahahaa ===>hahahaa ===>hahahaa ===>hahahaa ===>hahahaa ===>hahahaa ===>hahahaa ===>')
     
     pass
     

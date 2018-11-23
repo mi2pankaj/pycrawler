@@ -4,12 +4,11 @@ Created on 12-Oct-2018
 @author: pankaj.katiyar
 '''
 
-from __poc import AsyncSampleClass
-import asyncio
+from __poc import AsyncSimpleExample2
 
 if __name__ == '__main__':
     
-    sampleClassObject = AsyncSampleClass.MyClass()
+    sampleClassObject = AsyncSimpleExample2.MyClass()
     
 #     loop = asyncio.new_event_loop()
 #     

@@ -17,6 +17,11 @@ a = 1;
 #     print(v)
 
 
+a = 'ABC'
+if(a.lower().endswith('c')):
+    print('sss')
+    
+
 
 http = urllib3.PoolManager()
 url = 'http://www.thefamouspeople.com/singers.php'

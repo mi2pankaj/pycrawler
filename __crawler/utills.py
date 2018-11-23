@@ -11,7 +11,6 @@ import configparser
 import concurrent.futures
 import asyncio
 import logging
-from __crawler_logging_module.crawler_logging import __py_logger
 
 
 class GenericMethods():
@@ -24,10 +23,8 @@ class GenericMethods():
         
     'this will keep unique urls which are already traversed - to avoid repetition'
     globalTraversedSet = set()
-        
-    globalTaskList =[]
     
-    __py_logger = logging.getLogger('GenericMethods')
+    _py_logger = logging.getLogger('GenericMethods')
     
     specificDomain =''
     
@@ -40,7 +37,7 @@ class GenericMethods():
             maxThreads = int(self.get_config_param('crawler', 'max_threads'))
             self.specificDomain = self.get_config_param('crawler', 'specificDomain')
             
-            self.__py_logger.info(f' started crawling with max threads ==> {str(maxThreads)}  ==> looking for domain => {self.specificDomain} ')         
+            self._py_logger.info(f' started crawling with max threads ==> {str(maxThreads)}  ==> looking for domain => {self.specificDomain} ')         
             self.getInitialUrlsFromSuppliedRequest(startURL)
             
             ''' create an event loop to iterate the global map - async way '''
@@ -53,34 +50,67 @@ class GenericMethods():
 #             'synchronous crawling with executor ==> to use this -- remove async and await from all the used methods '
 #             loop.run_until_complete(self.start_sync_crawling_with_executor(_executor))
             
-            '===> running code in async way '
-            while (len(self.globalTraversedSet) != len(self.globalUrlMap)):
-                url = self.get_url_from_map()
-#                 loop.run_in_executor(_executor, self.start_async_crawling_without_executor, url)
-                loop.run_in_executor(None, self.start_async_crawling_without_executor, url)
-
-#             loop.run_until_complete(self.start_async_crawling_without_executor, url)                
-
-            loop.close()
+            #0. using main thread only -- single threaded 
+#             loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
             
-            self.__py_logger.info('Length of global list after crawling ==> ', len(self.globalTraversedSet) , ' Length of global DAMN map after crawling ' , len(self.globalDamnPagesMap))
-            self.__py_logger.info(self.globalDamnPagesMap)
-    
+            #1. multi-threaded but code not exiting, need to wait for code completion
+            url = 'none'
+            while(url != ''):
+                url = self.get_url_from_global_map()
+                _task = loop.run_in_executor(None, self.start_async_crawling_without_executor, url)
+              
+            loop.run_until_complete(_task)
+                    
+            #2.  using main thread only -- single threaded
+#             _task_list = []
+#             url = 'none'
+#             while(url != ''):
+#                 url = self.get_url_from_global_map()
+#                 _task = loop.create_task(self.start_async_crawling_without_executor(url))
+#                 _task_list.append(_task)
+#                                  
+#             loop.run_until_complete(asyncio.wait(_task_list))
+                
+            
+#             loop.close()
+            
+            self._py_logger.info(f' Length of global list after crawling: {len(self.globalTraversedSet)} Length of global DAMN map after crawling: {len(self.globalDamnPagesMap)}')
+            self._py_logger.info('********************* Printing Global Damm Map ******************* ')
+            self._py_logger.info(self.globalDamnPagesMap)
+#     
         except Exception:
-            self.__py_logger.error('Exception Occurred: ', exc_info=True)
-    
+            self._py_logger.error('Exception Occurred: ', exc_info=True)
+        
+            
+    ''' async entry method for crawler '''    
+    def start_async_crawling_without_executor(self, url):
+        
+        ''' create an event loop to iterate the global map - async way '''
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)        
+                
+        'run a task -- this means execute get_url_from_global_map while itearting the whole globalUrlMap '
+#         localMap = self.globalUrlMap
+#         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map() for url in localMap]))
+        
+        'run a task -- means execute get_url_from_global_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
+#         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
+        loop.run_until_complete(self.send_http_request_parse_response(url))
+        loop.close()
+
 
     ''' async entry method for crawler '''    
     def start_sync_crawling_with_executor(self, _executor):
         try:
             loop = asyncio.get_event_loop()
+            asyncio.set_event_loop(loop)        
             
             ' using loop with thread pool executor '
             while (len(self.globalTraversedSet) <= len(self.globalUrlMap)):
-                loop.run_in_executor(_executor, self.get_url_from_map)
+                loop.run_in_executor(_executor, self.get_url_from_global_map)
                 
         except Exception:            
-            self.__py_logger.error('Exception Occurred: ', exc_info=True)
+            self._py_logger.error('Exception Occurred: ', exc_info=True)
             
 
 #     ''' async entry method for crawler '''    
@@ -90,34 +120,15 @@ class GenericMethods():
 #         loop = asyncio.new_event_loop()
 #         asyncio.set_event_loop(loop)        
 #                 
-#         'run a task -- this means execute get_url_from_map while itearting the whole globalUrlMap '
+#         'run a task -- this means execute get_url_from_global_map while itearting the whole globalUrlMap '
 # #         localMap = self.globalUrlMap
 # #         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map() for url in localMap]))
 #         
-#         'run a task -- means execute get_url_from_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
+#         'run a task -- means execute get_url_from_global_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
 # #         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
 #         loop.run_until_complete(self.pick_url_from_global_map())
 #         
 #         loop.close()
-    
-    
-    ''' async entry method for crawler '''    
-    def start_async_crawling_without_executor(self, url):
-        
-        ''' create an event loop to iterate the global map - async way '''
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)        
-                
-        'run a task -- this means execute get_url_from_map while itearting the whole globalUrlMap '
-#         localMap = self.globalUrlMap
-#         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map() for url in localMap]))
-        
-        'run a task -- means execute get_url_from_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
-#         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
-        loop.run_until_complete(self.send_http_request_parse_response(url))
-        
-        loop.close()
-    
     
     
     ''' get config value from configuration '''
@@ -133,9 +144,7 @@ class GenericMethods():
     def ifLenskartDomain(self, url):
         url1 = url[url.find('//')+2:]
         url2 = url1[:url1.find('/')]
-        
-#         self.__py_logger.info('domain: '+url2 + ' from received url: '+url)
-        
+
         if url2.find(self.specificDomain) > -1:
             return True
         else:
@@ -146,14 +155,17 @@ class GenericMethods():
     async def pick_url_from_global_map(self):
         
         try:
-            url = self.get_url_from_map()
-            await self.send_http_request_parse_response(url)
+            url = 'none'
+            while(url not in ''):
+                url = self.get_url_from_global_map()
+                await self.send_http_request_parse_response(url)
+                
         except Exception:
-            self.__py_logger.error('Exception Occurred: ', exc_info=True)
+            self._py_logger.error('Exception Occurred: ', exc_info=True)
 
                       
     ''' launch crawler through executor using map '''
-    def get_url_from_map(self):
+    def get_url_from_global_map(self):
         
         try:
             lock = threading.RLock()
@@ -174,7 +186,7 @@ class GenericMethods():
                     break
                     
         except Exception:
-            self.__py_logger.error('Exception Occurred While Getting URL From Global Map: ', exc_info=True)
+            self._py_logger.error('Exception Occurred While Getting URL From Global Map: ', exc_info=True)
         
         finally:
             lock.release()
@@ -184,35 +196,19 @@ class GenericMethods():
         
     '''' added a method which return http response - for async handling '''    
     async def get_http_response(self, url):
-        try:
-            response = requests.get(url)
-            return response  
-        except Exception as e:
-            self.__py_logger.error(f' Exception Occurred While Getting Response From URL: {url}', exc_info=True)
-            # assigning some value so that in case of exception below status code condition doesn't break coz there will be no status code in exception.
-            response.pageSource = 'Exception_While_Browsing_URL'
-            response.status_code = int(777)
-            try:      
-                lock = threading.RLock()
-                lock.acquire(blocking=True)      
-                self.globalDamnPagesMap.update({url : str(e)})
-                __py_logger.info(f' {url} is updated in damm map. ')
-            finally:
-                lock.release()      
+        return requests.get(url)
         
-        
+                
     ''' perform task ==> get url, browse it and check it if its a DAMN and then find the url list and return this '''
 #     @asyncio.coroutine
     async def send_http_request_parse_response(self, url):
         
         try:
-            
             url = str(url)
  
             'check only those urls which starts with http and not traversed earlier and having lenskart domain, update them in global map as TRUE so that'
             'not picked up again'
             if((url in self.globalTraversedSet) | (not (self.ifLenskartDomain(url)))  | (not(url.startswith('http')))):
-                
                 try:
                     lock = threading.RLock()
                     lock.acquire(blocking=True)
@@ -223,105 +219,78 @@ class GenericMethods():
                     lock.release()
 
             else:
+                'keep a copy so that its not traversed again'
                 try:
-                    'keep a copy so that its not traversed again'
-                    try:
-                        lock = threading.RLock()
-                        lock.acquire(blocking=True)
-                        self.globalTraversedSet.add(url)
-                    finally:
-                        lock.release() 
+                    lock = threading.RLock()
+                    lock.acquire(blocking=True)
+                    self.globalTraversedSet.add(url)
+                finally:
+                    lock.release() 
                     
-                    'sending request to received url'                    
-                    try:
-#                         response = requests.get(url)
-                        response = await self.get_http_response(url)
-                        pageSource = response.text
-                        status_code = response.status_code
+                'sending request to received url and parse response and update global urls. '                    
+                try:
+#                   response = requests.get(url)
+                    response = await self.get_http_response(url)
+                    pageSource = response.text
+                    status_code = response.status_code
 
-                    except Exception as e:
-                        self.__py_logger.error(f' Exception Occurred While Browsing URL: {url}', exc_info=True)
-                        pageSource = 'Exception_While_Browsing_URL'
-                        # assigning some value so that in case of exception below status code condition doesn't break coz there will be no status code in exception.
-                        status_code = int(777)
-                        
-                        try:      
-                            lock = threading.RLock()
-                            lock.acquire(blocking=True)      
-                            self.globalDamnPagesMap.update({url : str(e)})
-                        finally:
-                            lock.release()
-                                                    
-                    if(str(status_code).startswith('4') | str(status_code).startswith('5')):
-                        
-                        self.__py_logger.info(f' Found a non responsive page  ==> {url} with status code ==> {status_code}')
-                        
-                        try:
-                            lock = threading.RLock()
-                            lock.acquire(blocking=True)        
-                            self.globalDamnPagesMap.update({url : status_code})
-                        finally:
-                            lock.release()
+                except Exception as e:
+                    self._py_logger.error(f' Exception Occurred While Browsing URL: {url}', exc_info=True)
                     
-                    # in case of exception - don't do anything - already handled while browsing.
-                    elif(pageSource.__contains__('Exception_While_Browsing_URL')):
-                        pass
+                    # assigning some value so that in case of exception below status code condition doesn't break coz there will be no status code in exception.
+                    pageSource = str(e)
+                    status_code = int(777)
+                                        
+                try:
+                    lock = threading.RLock()
+                    lock.acquire(blocking=True)
+                                                                
+                    if(str(status_code).startswith('4') | str(status_code).startswith('5')):                        
+                        self.globalDamnPagesMap.update({url : status_code})
+                        self._py_logger.info(f' NOT FOUND OR NON RESPONSIVE PAGE  ==> {url} Status_Code ==> {status_code}')
+                    
+                    # in case of exception while browsing - 
+                    elif(str(status_code).startswith('7')):
+                        self.globalDamnPagesMap.update({url : pageSource})
+                        self._py_logger.info(f' BROWSING EXCEPTION PAGE  ==> {url} ')
                     
                     elif(pageSource.__contains__('DAMN!!')):
-                        self.__py_logger.info('Found a DAMN Page  ==> '+url)
-
-                        try:    
-                            lock = threading.RLock()
-                            lock.acquire(blocking=True)        
-                            self.globalDamnPagesMap.update({url : 'DAMN'})
-                        finally:
-                            lock.release()
-                    
+                        self.globalDamnPagesMap.update({url : 'DAMN'})
+                        self._py_logger.info(f' DAMN PAGE  ==> {url} Status_Code ==> {status_code}')
+                        
                     elif(pageSource.__contains__("This page isn’t working")):
-                        self.__py_logger.info("This page isn't working ==> "+url)
-                             
-                        try:      
-                            lock = threading.RLock()
-                            lock.acquire(blocking=True)      
-                            self.globalDamnPagesMap.update({url : 'Not_Working_Page'})
-                        finally:
-                            lock.release()
-                                                    
+                        self.globalDamnPagesMap.update({url : 'Not_Working_Page'})
+                        self._py_logger.info(f' NOT WORKING PAGE  ==> {url} Status_Code ==> {status_code}')
+                                                                                
                     else:
                         ''' apply regex to get urls from response - urls starting with http '''
                         urlList = re.findall('(?<=href=").*?(?=")', pageSource)
                         
-                        ''' update the global url set and list '''
-                        try:
-                            lock = threading.RLock()
-                            lock.acquire(blocking=True)
-                        
-                            'add received urls in global map and remove non http urls + already browsed urls + exclude image url.. as they are slow for now ..'
-                            for x in urlList:
+                        'add received urls in global map and remove non http urls + already browsed urls + exclude image url.. as they are slow for now ..'
+                        for x in urlList:
+                            try:
                                 if ( (x.startswith('http')) & (self.ifLenskartDomain(x)) 
-                                     & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) 
-                                     & (not x.endswith('.jpg')) ):
+                                    & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) 
+                                    & (not (url in self.globalTraversedSet))    #debug condition to use less urls
+                                    & (not (x.lower().endswith('.jpg') | x.lower().endswith('.png') | x.lower().endswith('.jpeg'))) ):
                                     
                                     self.globalUrlMap.update({x:False})
                                 else:
                                     urlList.remove(x)
-#                             '%Y-%m-%d %H:%M:%S'
                                                                                 
-                        except Exception:
-                            self.__py_logger.error('Exception Occurred: ', exc_info=True)
-                            
-                        finally:
-                            self.__py_logger.info(f" global map: {len(self.globalUrlMap)}, traversed: {len(self.globalTraversedSet)}, damn: {len(self.globalDamnPagesMap)}, url ==> {url}")
-                            lock.release()
-                            
-                except Exception:
-                    self.__py_logger.error(f'Exception Occurred With {url} ', exc_info=True)
+                            except Exception:
+                                self._py_logger.error('Exception Occurred: ', exc_info=True)
                     
-#             self.__py_logger.info('final global traversed set ==> ',len(self.globalTraversedSet), ' global map ==> ', len(self.globalUrlMap), ' global DAMN map ==> ' , len(self.globalDamnPagesMap))
-            
+                except Exception:
+                    self._py_logger.error(f' --> Exception Occurred With {url} ', exc_info=True)
+       
+                finally:
+                    lock.release()
+                    
+                self._py_logger.info(f" global map: {len(self.globalUrlMap)}, traversed: {len(self.globalTraversedSet)}, damn: {len(self.globalDamnPagesMap)}, url ==> {url}, status_code: {status_code}")        
+                
         except Exception:
-            self.__py_logger.error('Exception Occurred: ', exc_info=True)
-
+            self._py_logger.error('Exception Occurred: ', exc_info=True)
 
 
     ''' hit the received request, find the urls from response '''
@@ -344,9 +313,9 @@ class GenericMethods():
                     urlList.remove(x)
                                                                                                                     
         except Exception:
-            self.__py_logger.error('Exception Occurred: ', exc_info=True)
+            self._py_logger.error('Exception Occurred: ', exc_info=True)
             
-        self.__py_logger.info(f' First List Of Received List Of URLs From Supplied Request ===>  {len(self.globalUrlMap)}')
+        self._py_logger.info(f' First List Of Received List Of URLs From Supplied Request ===>  {len(self.globalUrlMap)}')
 
 
 
