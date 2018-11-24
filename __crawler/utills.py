@@ -186,14 +186,13 @@ class GenericMethods():
             localUrlMap = self.globalUrlMap
             
             for k,v in list(localUrlMap.items()):
-                if(v==False):                    
-                    
+                if(v==False):
                     ' update url to true so that its not picked up again '
                     url = k
                     self.globalUrlMap.update({k:True})
      
                     break
-                    
+                
         except Exception:
             self._py_logger.error('Exception Occurred While Getting URL From Global Map: ', exc_info=True)
         
@@ -224,6 +223,9 @@ class GenericMethods():
                     
                     ' update url to true so that its not picked up again '
                     self.globalUrlMap.update({url:True})
+                    
+                    'handling those condition where url is not of lenskart domain and not starts with http '
+                    self.globalTraversedSet.add(url)
                 finally:
                     lock.release()
 
@@ -253,7 +255,7 @@ class GenericMethods():
                 try:
                     lock = threading.RLock()
                     lock.acquire(blocking=True)
-                                                                
+                    
                     if(str(status_code).startswith('4') | str(status_code).startswith('5')):                        
                         self.globalDamnPagesMap.update({url : status_code})
                         self._py_logger.info(f' NOT FOUND OR NON RESPONSIVE PAGE  ==> {url} Status_Code ==> {status_code}')
