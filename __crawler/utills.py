@@ -33,19 +33,20 @@ class GenericMethods():
         
         try:            
             
-            'get max threads to parse'
-            maxThreads = int(self.get_config_param('crawler', 'max_threads'))
+#             'get max threads to parse'
+#             maxThreads = int(self.get_config_param('crawler', 'max_threads'))
             self.specificDomain = self.get_config_param('crawler', 'specificDomain')
             
-            self._py_logger.info(f' started crawling with max threads ==> {str(maxThreads)}  ==> looking for domain => {self.specificDomain} ')         
+            self._py_logger.info(f' started crawling with default executor, looking for domain => {self.specificDomain} ')         
             self.getInitialUrlsFromSuppliedRequest(startURL)
             
             ''' create an event loop to iterate the global map - async way '''
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)        
 
-            '===> crawl until traversed urls and parsed urls map are not same -- to review ==> '
-            _executor = concurrent.futures.ThreadPoolExecutor(max_workers=maxThreads)
+            '===> crawl until traversed urls and parsed urls map are not same -- to review ==> not using this thread coz' 
+            'if given threads are higher than the allocated work then --> loop is getting broken .. therefore using default executor '
+#             _executor = concurrent.futures.ThreadPoolExecutor(max_workers=maxThreads)
             
 #             'synchronous crawling with executor ==> to use this -- remove async and await from all the used methods '
 #             loop.run_until_complete(self.start_sync_crawling_with_executor(_executor))
