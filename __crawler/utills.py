@@ -144,7 +144,9 @@ class GenericMethods():
     ''' get config value from configuration '''
     def get_config_param(self, section, key):
         config = configparser.ConfigParser()
-        config.read("/Users/pankaj.katiyar/Desktop/Automation/PythonCrawler/config/config.ini")
+        #config.read("/Users/pankaj.katiyar/Desktop/Automation/PythonCrawler/config/config.ini")
+        configFile = os.path.dirname(os.path.abspath(''))+'/config/config.ini'
+        config.read(configFile)
         self.config = config
 
         return self.config.get(section, key)
