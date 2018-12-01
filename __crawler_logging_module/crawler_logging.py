@@ -28,7 +28,7 @@ __py_logger = logging.getLogger(__name__)
 logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
 logging.getLogger('asyncio').setLevel(logging.CRITICAL)
 logging.getLogger('chardet.charsetprober').setLevel(logging.CRITICAL)
-
+logging.getLogger('requests').setLevel(logging.WARNING)
 
 # logger.setLevel(logging.NOTSET)
 # handler = logging.FileHandler('py.log')
