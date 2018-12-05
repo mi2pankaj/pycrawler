@@ -28,11 +28,14 @@ class GenericMethods():
     _py_logger = logging.getLogger('GenericMethods')
     
     specificDomain =''
+    targetURL = ''
     
     ''' this is the main entry method '''
     def entryMethod(self, startURL):
         
         try:            
+            
+            self.targetURL = startURL
             
 #             'get max threads to parse'
 #             maxThreads = int(self.get_config_param('crawler', 'max_threads'))
@@ -154,7 +157,7 @@ class GenericMethods():
   
   
     ''' get domain from received url '''
-    def ifLenskartDomain(self, url):
+    def if_desired_domain(self, url):
         url1 = url[url.find('//')+2:]
         url2 = url1[:url1.find('/')]
 
@@ -220,7 +223,7 @@ class GenericMethods():
             
             'check only those urls which starts with http and not traversed earlier and having lenskart domain, update them in global map as TRUE so that'
             'not picked up again'
-            if((url in self.globalTraversedSet) | (not (self.ifLenskartDomain(url)))  | (not(url.startswith('http')))):
+            if((url in self.globalTraversedSet) | (not (self.if_desired_domain(url)))  | (not(url.startswith('http')))):
                 try:
                     lock = threading.RLock()
                     lock.acquire(blocking=True)
@@ -262,20 +265,20 @@ class GenericMethods():
                     
                     if(str(status_code).startswith('4') | str(status_code).startswith('5')):                        
                         self.globalDamnPagesMap.update({url : status_code})
-                        self._py_logger.info(f' NOT FOUND OR NON RESPONSIVE PAGE  ==> {url} Status_Code ==> {status_code}')
+                        self._py_logger.info(f' ERROR == NOT FOUND OR NON RESPONSIVE PAGE  ==> {url} Status_Code ==> {status_code}')
                     
                     # in case of exception while browsing - 
                     elif(str(status_code).startswith('7')):
                         self.globalDamnPagesMap.update({url : pageSource})
-                        self._py_logger.info(f' BROWSING EXCEPTION PAGE  ==> {url} ')
+                        self._py_logger.info(f' ERROR == BROWSING EXCEPTION PAGE  ==> {url} ')
                     
                     elif(pageSource.__contains__('DAMN!!')):
                         self.globalDamnPagesMap.update({url : 'DAMN'})
-                        self._py_logger.info(f' DAMN PAGE  ==> {url} Status_Code ==> {status_code}')
+                        self._py_logger.info(f' ERROR == DAMN PAGE  ==> {url} Status_Code ==> {status_code}')
                         
                     elif(pageSource.__contains__("This page isn’t working")):
                         self.globalDamnPagesMap.update({url : 'Not_Working_Page'})
-                        self._py_logger.info(f' NOT WORKING PAGE  ==> {url} Status_Code ==> {status_code}')
+                        self._py_logger.info(f' ERROR == NOT WORKING PAGE  ==> {url} Status_Code ==> {status_code}')
                                                                                 
                     else:
                         ''' apply regex to get urls from response - urls starting with http '''
@@ -284,15 +287,17 @@ class GenericMethods():
                         'add received urls in global map and remove non http urls + already browsed urls + exclude image url.. as they are slow for now ..'
                         for x in urlList:
                             try:
-                                                                
-                                if ( (x.startswith('http')) & (self.ifLenskartDomain(x)) 
+                                x = self.format_url(x)
+#                                 self._py_logger.info(f'====> while crawling ==> formatted url ==> {x}')
+                                     
+                                if ( (x.startswith('http')) & (self.if_desired_domain(x)) 
                                     & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) 
 #                                     & (not (url in self.globalTraversedSet))    #debug condition to use less urls
                                     & (not (x.lower().endswith('.jpg') | x.lower().endswith('.png') | x.lower().endswith('.jpeg'))) ):
                                     
                                     self.globalUrlMap.update({x:False})
                                 else:
-                                    urlList.remove(x)
+                                    pass
                                                                                 
                             except Exception:
                                 self._py_logger.error('Exception Occurred: ', exc_info=True)
@@ -323,15 +328,29 @@ class GenericMethods():
                         
             'convert received urls into set for uniqueness and map and remove non http urls + already browsed urls'
             for x in urlList:
-                if ( (x.startswith('http')) & (self.ifLenskartDomain(x)) & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) ):
+                
+                x = self.format_url(x)
+                print('after compilation, url is: '+x)
+                
+                if ( (x.startswith('http')) & (self.if_desired_domain(x)) & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) ):
                     self.globalUrlMap.update({x:False})
                 else:
-                    urlList.remove(x)
-                                                                                                                    
+                    pass
+                                                                                                                                    
         except Exception:
             self._py_logger.error('Exception Occurred: ', exc_info=True)
                 
-        self._py_logger.info(f' First List Of Received List Of URLs From Supplied Request ===>  {len(self.globalUrlMap)}')
+        self._py_logger.info(f' First List Of Received List Of URLs From Supplied Request ===>  {len(self.globalUrlMap)} , Before Manipulation ==> {len(urlList)} ')
 
-
+        
+    ''' format the received url to make it proper '''
+    def format_url(self, x):
+        
+        if( x.startswith('//')):
+            x='https:'+x
+        elif(x.startswith('/') & (x != '/')):
+            x=self.targetURL+x
+            
+        return x  
+        
 
