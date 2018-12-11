@@ -93,6 +93,12 @@ class GenericMethods():
             self._py_logger.info('********************* Printing Global Damm Map ******************* ')
             self._py_logger.info(self.globalDamnPagesMap)
             
+            'write urls in csv'
+            with open('BrokenUrls.csv', mode='w') as csv_file:
+                writer = csv.writer(csv_file)
+                for k,v in self.globalDamnPagesMap.items():                
+                    writer.writerow([k,v])
+                    writer.writerow('')
             
         except Exception:
             self._py_logger.error('Exception Occurred: ', exc_info=True)

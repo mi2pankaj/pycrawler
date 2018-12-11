@@ -15,29 +15,41 @@ a = 1;
 #         v=str('DAMN')
 #     print(v)
 
-
-'write damn page in csv '
-with open('BrokenUrls.csv', mode='w') as csv_file:
-    fieldnames = ['URL', 'Status_Code']
-    writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
-
-    writer.writeheader()
-                
-    writer.writerow({'emp_name': 'John Smith', 'dept': 'Accounting', 'birth_month': 'November'})
-    writer.writerow({'emp_name': 'Erica Meyers', 'dept': 'IT', 'birth_month': 'March'})
-    
-    
-a = 'ABC'
-if(a.lower().endswith('c')):
-    print('sss')
-    
 pap={}
 pap.update({'a':'b'})
+pap.update({'aaa':'aaaanh'})
+
 print(pap)
 
 if pap.get('a') == None:
     print(True)
 
+pap = [{'URL': 'abc.com', 'Status_Code':'200'}, {'URL': 'abc.com', 'Status_Code':'200'}]
+
+'write damn page in csv '
+with open('BrokenUrls.csv', mode='w') as csv_file:
+    fieldnames = ['URL', 'Status_Code']
+    writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+    writer.writeheader()
+    
+    for dat in list(pap):                
+        writer.writerow(dat)
+#         writer.writerow({'emp_name': 'Erica Meyers', 'dept': 'IT', 'birth_month': 'March'})
+
+
+pap = {'URL_Found': 'abc.com', 'Status_Found':'200', 'Status_Code':'777'}
+
+with open('BrokenUrls11.csv', mode='w') as csv_file:
+    writer = csv.writer(csv_file)
+    for k,v in pap.items():                
+        writer.writerow([k,v])
+        writer.writerow('')
+
+    
+a = 'ABC'
+if(a.lower().endswith('c')):
+    print('sss')
+    
 
 http = urllib3.PoolManager()
 url = 'http://www.thefamouspeople.com/singers.php'
