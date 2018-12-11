@@ -12,10 +12,11 @@ import concurrent.futures
 import asyncio
 import logging
 import os
+import csv
 
 
 class GenericMethods():
-
+    
     'contains information about damn pages'
     globalDamnPagesMap = {}
     
@@ -91,7 +92,8 @@ class GenericMethods():
             self._py_logger.info(f' Length of global list after crawling: {len(self.globalTraversedSet)} Length of global DAMN map after crawling: {len(self.globalDamnPagesMap)}')
             self._py_logger.info('********************* Printing Global Damm Map ******************* ')
             self._py_logger.info(self.globalDamnPagesMap)
-#     
+            
+            
         except Exception:
             self._py_logger.error('Exception Occurred: ', exc_info=True)
         
@@ -253,7 +255,7 @@ class GenericMethods():
                     status_code = response.status_code
 
                 except Exception as e:
-                    self._py_logger.error(f' Exception Occurred While Browsing URL: {url}', exc_info=True)
+                    self._py_logger.error(f' Exception Occurred While Browsing URL: {url} and exception is: {str(e)}')
                     
                     # assigning some value so that in case of exception below status code condition doesn't break coz there will be no status code in exception.
                     pageSource = str(e)
@@ -263,21 +265,21 @@ class GenericMethods():
                     lock = threading.RLock()
                     lock.acquire(blocking=True)
                     
-                    if(str(status_code).startswith('4') | str(status_code).startswith('5')):                        
+                    if(str(status_code).startswith('4') | str(status_code).startswith('5') | str(status_code).startswith('7')):    
                         self.globalDamnPagesMap.update({url : status_code})
                         self._py_logger.info(f' ERROR == NOT FOUND OR NON RESPONSIVE PAGE  ==> {url} Status_Code ==> {status_code}')
                     
                     # in case of exception while browsing - 
-                    elif(str(status_code).startswith('7')):
-                        self.globalDamnPagesMap.update({url : pageSource})
-                        self._py_logger.info(f' ERROR == BROWSING EXCEPTION PAGE  ==> {url} ')
+#                     elif(str(status_code).startswith('7')):
+#                         self.globalDamnPagesMap.update({url : pageSource})
+#                         self._py_logger.info(f' ERROR == BROWSING EXCEPTION PAGE  ==> {url} ')
                     
-                    elif(pageSource.__contains__('DAMN!!')):
-                        self.globalDamnPagesMap.update({url : 'DAMN'})
-                        self._py_logger.info(f' ERROR == DAMN PAGE  ==> {url} Status_Code ==> {status_code}')
-                        
+#                     elif(pageSource.__contains__('DAMN!!')):
+#                         self.globalDamnPagesMap.update({url : 'DAMN'})
+#                         self._py_logger.info(f' ERROR == DAMN PAGE  ==> {url} Status_Code ==> {status_code}')
+                         
                     elif(pageSource.__contains__("This page isn’t working")):
-                        self.globalDamnPagesMap.update({url : 'Not_Working_Page'})
+                        self.globalDamnPagesMap.update({url : 777})
                         self._py_logger.info(f' ERROR == NOT WORKING PAGE  ==> {url} Status_Code ==> {status_code}')
                                                                                 
                     else:
@@ -352,5 +354,6 @@ class GenericMethods():
             x=self.targetURL+x
             
         return x  
+    
         
 

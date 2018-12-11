@@ -1,10 +1,9 @@
-
-from pip._vendor.html5lib._ihatexml import letter
 from builtins import str
 
 
 import urllib3
 from __crawler import utills
+import csv
 
 
 a = 1;
@@ -17,10 +16,27 @@ a = 1;
 #     print(v)
 
 
+'write damn page in csv '
+with open('BrokenUrls.csv', mode='w') as csv_file:
+    fieldnames = ['URL', 'Status_Code']
+    writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+
+    writer.writeheader()
+                
+    writer.writerow({'emp_name': 'John Smith', 'dept': 'Accounting', 'birth_month': 'November'})
+    writer.writerow({'emp_name': 'Erica Meyers', 'dept': 'IT', 'birth_month': 'March'})
+    
+    
 a = 'ABC'
 if(a.lower().endswith('c')):
     print('sss')
     
+pap={}
+pap.update({'a':'b'})
+print(pap)
+
+if pap.get('a') == None:
+    print(True)
 
 
 http = urllib3.PoolManager()
@@ -28,7 +44,7 @@ url = 'http://www.thefamouspeople.com/singers.php'
 response = http.request('GET', url)
 print(response.data)
 print(response.status)
-
+    
 m1 = {'1':'2', '11':'22'}
 print(m1.get('1'))
 print(m1.get('13'))
