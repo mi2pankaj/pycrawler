@@ -42,7 +42,7 @@ class GenericMethods():
 #             maxThreads = int(self.get_config_param('crawler', 'max_threads'))
             self.specificDomain = self.get_config_param('crawler', 'specificDomain')
             
-            self._py_logger.info(f' started crawling with default executor, looking for domain => {self.specificDomain} ')         
+            self._py_logger.info(f" started crawling with default executor, looking for domain => {self.specificDomain}")         
             self.getInitialUrlsFromSuppliedRequest(startURL)
             
             ''' create an event loop to iterate the global map - async way '''
@@ -157,10 +157,11 @@ class GenericMethods():
     def get_config_param(self, section, key):
         config = configparser.ConfigParser()
         #config.read("/Users/pankaj.katiyar/Desktop/Automation/PythonCrawler/config/config.ini")
-        configFile = os.path.dirname(os.path.abspath(''))+'/config/config.ini'
+        configFile = os.path.dirname(os.path.abspath(__file__))+'/../config/config.ini'
         config.read(configFile)
         self.config = config
-
+        
+        print('Using config file - '+configFile)
         return self.config.get(section, key)
   
   
