@@ -20,7 +20,8 @@ else:
 
 
 # get the log file 
-__logfile = os.path.dirname(os.path.abspath(''))+'/logs/pyc.log'
+__logfile = os.path.dirname(os.path.abspath(__file__))+'/../logs/pyc.log'
+print('Log File will be created at - ', __logfile)
 logging.basicConfig(level=logging.NOTSET, filemode='w', filename=__logfile, format=' %(asctime)s - %(filename)s - %(funcName)s - %(levelname)s - %(threadName)s - %(message)s ')
 __py_logger = logging.getLogger(__name__)
 

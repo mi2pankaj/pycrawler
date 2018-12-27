@@ -339,7 +339,7 @@ class GenericMethods():
             for x in urlList:
                 
                 x = self.format_url(x)
-                print('after compilation, url is: '+x)
+#                 print('after compilation, url is: '+x)
                 
                 if ( (x.startswith('http')) & (self.if_desired_domain(x)) & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) ):
                     self.globalUrlMap.update({x:False})
