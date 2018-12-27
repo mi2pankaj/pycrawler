@@ -11,16 +11,16 @@ import logging
 import os
 
 # create log folder 
-logPath = os.path.dirname(os.path.abspath(''))+'/logs/'
+logPath = os.path.dirname(os.path.abspath(__file__))+'/../logs/'
 if not os.path.exists(logPath):
-    os.mkdir(os.path.dirname(os.path.abspath(''))+'/logs/')
+    os.mkdir(os.path.dirname(os.path.abspath(__file__))+'/../logs/')
     print('log directory created.')
 else:
     print('log directory exists. ')
 
 
 # get the log file 
-__logfile = os.path.dirname(os.path.abspath(__file__))+'/../logs/pyc.log'
+__logfile = logPath+'pyc.log'
 print('Log File will be created at - ', __logfile)
 logging.basicConfig(level=logging.NOTSET, filemode='w', filename=__logfile, format=' %(asctime)s - %(filename)s - %(funcName)s - %(levelname)s - %(threadName)s - %(message)s ')
 __py_logger = logging.getLogger(__name__)
