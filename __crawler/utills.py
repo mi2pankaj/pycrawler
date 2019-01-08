@@ -98,7 +98,7 @@ class GenericMethods():
                 writer = csv.writer(csv_file)
                 for k,v in self.globalDamnPagesMap.items():                
                     writer.writerow([k,v])
-                    writer.writerow('')
+                    #writer.writerow('')
             
         except Exception:
             self._py_logger.error('Exception Occurred: ', exc_info=True)
