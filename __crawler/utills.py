@@ -117,7 +117,7 @@ class GenericMethods():
         
         'run a task -- means execute get_url_from_global_map method - which browse only one url at a time, here iteration will be controlled by outer loop '
 #         loop.run_until_complete(asyncio.gather(*[self.pick_url_from_global_map()]))
-        loop.run_until_complete(self.send_http_request_parse_response(url))
+        loop.run_until_complete(self.send_http_request_parse_response(url.encode("utf-8")))
         loop.close()
 
 
@@ -317,6 +317,7 @@ class GenericMethods():
                 finally:
                     lock.release()
                     
+                url = url.encode("utf-8")
                 self._py_logger.info(f" global map: {len(self.globalUrlMap)}, traversed: {len(self.globalTraversedSet)}, damn: {len(self.globalDamnPagesMap)}, url ==> {url}, status_code: {status_code}")        
                 
         except Exception:
