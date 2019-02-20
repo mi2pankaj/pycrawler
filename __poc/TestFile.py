@@ -4,7 +4,7 @@ from builtins import str
 import urllib3
 from __crawler import utills
 import csv
-
+import subprocess
 
 a = 1;
 
@@ -14,6 +14,11 @@ a = 1;
 #     if(v==200):
 #         v=str('DAMN')
 #     print(v)
+
+
+p=subprocess.Popen(["cat", "/tmp/tt"])
+output =p.communicate()
+print("--- "  , output)
 
 pap={}
 pap.update({'a':'b'})
