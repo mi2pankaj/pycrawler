@@ -28,7 +28,8 @@ if __name__ == '__main__':
     'create object of class'
     utillsObject = utills.GenericMethods()
     startURL = utillsObject.get_config_param('crawler', 'targetURL')
-    
+    print("Starting With URL --> "+startURL)
+
     'start crawling'
     utillsObject.entryMethod(startURL)
     

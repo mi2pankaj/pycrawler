@@ -28,7 +28,8 @@ class GenericMethods():
     
     _py_logger = logging.getLogger('GenericMethods')
     
-    specificDomain =''
+    specificDomain = ''
+    regexToParseUrl = ''
     targetURL = ''
     
     ''' this is the main entry method '''
@@ -41,7 +42,9 @@ class GenericMethods():
 #             'get max threads to parse'
 #             maxThreads = int(self.get_config_param('crawler', 'max_threads'))
             self.specificDomain = self.get_config_param('crawler', 'specificDomain')
-            
+            self.regexToParseUrl = self.get_config_param('crawler', 'regexToParseUrl')
+            print('Using regex to parse utl --> '+self.regexToParseUrl)
+
             self._py_logger.info(f" started crawling with default executor, looking for domain => {self.specificDomain}")         
             self.getInitialUrlsFromSuppliedRequest(startURL)
             
@@ -156,7 +159,6 @@ class GenericMethods():
     ''' get config value from configuration '''
     def get_config_param(self, section, key):
         config = configparser.ConfigParser()
-        #config.read("/Users/pankaj.katiyar/Desktop/Automation/PythonCrawler/config/config.ini")
         configFile = os.path.dirname(os.path.abspath(__file__))+'/../config/config.ini'
         config.read(configFile)
         self.config = config
@@ -291,8 +293,9 @@ class GenericMethods():
                                                                                 
                     else:
                         ''' apply regex to get urls from response - urls starting with http '''
-                        urlList = re.findall('(?<=href=").*?(?=")', pageSource)
-                        
+                        # urlList = re.findall('(?<=href=").*?(?=")', pageSource)
+                        urlList = re.findall(self.regexToParseUrl, pageSource)
+
                         'add received urls in global map and remove non http urls + already browsed urls + exclude image url.. as they are slow for now ..'
                         for x in urlList:
                             try:
@@ -334,7 +337,8 @@ class GenericMethods():
             pageSource = response.text
             
             ''' apply regex to get urls from response - urls starting with http '''
-            urlList = re.findall('(?<=href=").*?(?=")', pageSource)
+            # urlList = re.findall('(?<=href=").*?(?=")', pageSource)
+            urlList = re.findall(self.regexToParseUrl, pageSource)
                         
             'convert received urls into set for uniqueness and map and remove non http urls + already browsed urls'
             for x in urlList:
