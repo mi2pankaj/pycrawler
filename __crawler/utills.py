@@ -54,7 +54,7 @@ class GenericMethods():
 
             '===> crawl until traversed urls and parsed urls map are not same -- to review ==> not using this thread coz' 
             'if given threads are higher than the allocated work then --> loop is getting broken .. therefore using default executor '
-#             _executor = concurrent.futures.ThreadPoolExecutor(max_workers=maxThreads)
+            _executor = concurrent.futures.ThreadPoolExecutor(max_workers=100)
             
 #             'synchronous crawling with executor ==> to use this -- remove async and await from all the used methods '
 #             loop.run_until_complete(self.start_sync_crawling_with_executor(_executor))
@@ -70,7 +70,7 @@ class GenericMethods():
                 url = self.get_url_from_global_map()
                 
                 if(url != ''):
-                    _task = loop.run_in_executor(None, self.start_async_crawling_without_executor, url)                    
+                    _task = loop.run_in_executor(_executor, self.start_async_crawling_without_executor, url)
                     _task_list.append(_task)
                     
 #                     print(i," ==> "+url)
