@@ -306,7 +306,7 @@ class GenericMethods():
                                     & ((self.globalUrlMap.get(x) == None) | (self.globalUrlMap.get(x) == False)) 
 #                                     & (not (url in self.globalTraversedSet))    #debug condition to use less urls
                                     & (not (x.lower().endswith('.jpg') | x.lower().endswith('.png') | x.lower().endswith('.jpeg'))) ):
-                                    
+
                                     self.globalUrlMap.update({x:False})
                                 else:
                                     pass
@@ -316,13 +316,14 @@ class GenericMethods():
                     
                 except Exception:
                     self._py_logger.error(f' --> Exception Occurred With {url} ', exc_info=True)
-       
+
+
                 finally:
+                    url = url.encode("utf-8")
+                    self._py_logger.info(f" global map: {len(self.globalUrlMap)}, traversed: {len(self.globalTraversedSet)}, damn: {len(self.globalDamnPagesMap)}, url ==> {url}, status_code: {status_code}")
+
                     lock.release()
-                    
-                url = url.encode("utf-8")
-                self._py_logger.info(f" global map: {len(self.globalUrlMap)}, traversed: {len(self.globalTraversedSet)}, damn: {len(self.globalDamnPagesMap)}, url ==> {url}, status_code: {status_code}")        
-                
+
         except Exception:
             self._py_logger.error('Exception Occurred: ', exc_info=True)
 
