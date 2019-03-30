@@ -77,6 +77,7 @@ class GenericMethods():
 #                     i=i+1
                 
             loop.run_until_complete(asyncio.wait(_task_list))
+            loop.close()
                                     
             'need to wait until all tasks submitted to executors are completed.. --> need fix here '
 #             loop.run_until_complete(asyncio.wait(_task_list))
